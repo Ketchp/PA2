@@ -21,105 +21,78 @@
 using namespace std;
 #endif /* __PROGTEST__ */
 
-#define ones( n ) ( ( 1ull << (n) ) - 1 )
-
-
-struct bitArr
+// mask of ones with length n
+constexpr uint64_t ones( const uint8_t n )
 {
-  bitArr()
-    : bitArray( 0ul ), length( 0u )
+  return ( 1ull << n ) - 1;
+}
+
+// struct for storing bit array of variable size ( max 32bit )
+// ( 0, 0 ) reserved to signal invalid value
+// ( 1, 0 ) reserved to signal EOF
+struct bitArray
+{
+  uint32_t bits;
+  uint8_t length;
+
+  bitArray()
+    : bits( 0 ), length( 0 )
   {};
   
-  // (1, 0) reserved for EOF
-  bitArr( uint32_t value, uint8_t length )
-    : bitArray( value ), length( length )
+  bitArray( uint32_t value, uint8_t length )
+    : bits( value & ( ones( length ) | 1 ) ), length( length )
   {};
-
-/*
-  static bitArr fromUnicode( uint32_t unicode )
-  {
-    uint8_t bytes = 0;
-    if( unicode < 0x80 )
-      return bitArr( unicode, 8 );
-    else if( unicode < 0x800 )
-    {
-      bytes = 2;
-    }
-    else if( unicode < 0x10000ull )
-    {
-      bytes = 3;
-    }
-    else if( unicode < 0x200000ull )
-    {
-      bytes = 4;
-    }
-    uint8_t firstByte = ones(bytes) << ( 8 - bytes );
-    firstByte |= unicode >> ( ( bytes - 1 ) * 6 );
-
-    unicode &= ones( ( bytes - 1 ) * 6 );
-
-    bitArr res( firstByte, 8 );
-    for( uint8_t byte = 1; byte < bytes; ++byte )
-    {
-      uint8_t second = ( 1 << 7 );
-      firstByte |= unicode >> ( ( bytes - byte ) * 6 );
-      res += bitArr(  )
-    }
-  };
-*/
   
-  bool operator==( const bitArr &other ) const
+  bool operator==( const bitArray &other ) const
   {
-    return length == other.length &&
-           bitArray == other.bitArray;
+    return bits == other.bits && length == other.length;
   };
 
-  bool operator!=( const bitArr &other ) const
+  bool operator!=( const bitArray &other ) const
   {
     return !( *this == other );
   };
 
   uint32_t operator&( uint32_t other ) const
   {
-    return bitArray & other;
+    return bits & other;
   };
 
-  bitArr getFirst( uint8_t count ) const
+  bitArray getFirst( uint8_t count ) const
   {
-    bitArr res = *this;
-    res.bitArray >>= res.length - count;
+    bitArray res = *this;
+    res.bits >>= res.length - count;
     res.length = count;
     return res;
   };
 
-  void operator+=( const bitArr &other )
+  void operator+=( const bitArray &other )
   {
-    bitArray <<= other.length;
-    bitArray |= ( other.bitArray & ones(other.length) );
+    bits <<= other.length;
+    bits |= other.bits & ones(other.length);
     length += other.length;
   };
 
   void operator+=( const uint8_t other )
   {
-    bitArray <<= 8;
-    bitArray |= other;
+    bits <<= 8;
+    bits |= other;
     length += 8;
   };
 
-  bitArr operator+( const bitArr &other ) const
+  bitArray operator+( const bitArray &other ) const
   {
-    bitArr res( *this );
-    res.bitArray <<= other.length;
-    res.bitArray |= other.bitArray;
+    bitArray res( *this );
+    res.bits <<= other.length;
+    res.bits |= other.bits & ones(other.length);
     res.length += other.length;
     return res;
   };
 
-
   // needed for usage as key in map
-  bool operator<( const bitArr &other ) const
+  bool operator<( const bitArray &other ) const
   {
-    return bitArray < other.bitArray || ( bitArray == other.bitArray && length < other.length );
+    return bits < other.bits || ( bits == other.bits && length < other.length );
   };
 
   operator bool() const
@@ -131,41 +104,37 @@ struct bitArr
   {
     for( int8_t shift = length - 8; shift >= 0; shift -= 8 )
     {
-      const uint8_t temp = bitArray >> shift;
+      const uint8_t temp = bits >> shift;
       stream.write( (const char *)&temp, 1 );
     }
   };
-
-  uint32_t bitArray;
-  // length = 0 means invalid bit array ( eg. error occured during read )
-  uint8_t length;
 };
 
 
-class buffer
+class bitStream
 {
 public:
   const static uint8_t BUFFER_SIZE = 64;
-  buffer( fstream &stream)
+  bitStream( fstream &stream)
     : prefix( 0u ), bufferLen( 0u ), stream( stream )
   {};
 
-  bitArr get( uint8_t length )
+  bitArray get( const uint8_t length )
   {
     fillBuffer();
-    // invalid buffer: eof or file during read
-    if( length > bufferLen ) return bitArr(); 
+    // invalid bitStream: eof or file during read
+    if( length > bufferLen ) return bitArray(); 
     uint64_t temp = prefix;
     temp >>= bufferLen - length;
     bufferLen -= length;
     prefix &= ones( bufferLen );    // discard front bits that have been read
-    return bitArr( temp, length );
+    return bitArray( temp, length );
   };
 
-  void write( const bitArr &data )
+  void write( const bitArray &data )
   {
     prefix <<= data.length;
-    prefix |= data.bitArray;
+    prefix |= data.bits;
     bufferLen += data.length;
     while( bufferLen >= 8 ) writeByte();
   };
@@ -178,34 +147,26 @@ public:
     writeByte();
   };
 
-  bool getUnicode( bitArr &target )
+  bool getUnicode( bitArray &target )
   {
-    bitArr first = get( 8 );
+    bitArray first = get( 8 );
     if( !first ) return false;
 
     // 0b<3 zero bytes> 1110 XXXX ---> ( << 24 ) 
     // 0b1110 XXXX <3 zero bytes> ---> ~
     // 0b0001 XXXX <3 ones bytes> ---> ~
 
-    uint8_t byteCount = __builtin_clz( ~( first.bitArray << 24 ) );
+    uint8_t byteCount = __builtin_clz( ~( first.bits << 24 ) );
     if( byteCount == 1 || byteCount > 4 ) return false;
 
-/*
-    if( first.getFirst( 1 ) == bitArr( 0b0, 1 ) ) byteCount = 1;
-    else if( first.getFirst( 2 ) == bitArr( 0b10, 2 ) ) return false;
-    else if( first.getFirst( 3 ) == bitArr( 0b110, 3 ) ) byteCount = 2;
-    else if( first.getFirst( 4 ) == bitArr( 0b1110, 4 ) ) byteCount = 3;
-    else if( first.getFirst( 5 ) == bitArr( 0b11110, 5 ) ) byteCount = 4;
-    else return false;
-*/
     for( uint8_t byte = 1; byte < byteCount; ++byte )
     {
-      bitArr trail = get( 8 );
-      if( trail.getFirst( 2 ) == bitArr( 0b10, 2 ) )
+      bitArray trail = get( 8 );
+      if( trail.getFirst( 2 ) == bitArray( 0b10, 2 ) )
         first += trail;
       else return false;
     }
-    if( first.bitArray >= 0xf4908080ul ) return bitArr();
+    if( first.bits >= 0xf4908080ul ) return bitArray();
     target = first;
     return true;
   };
@@ -252,7 +213,7 @@ public:
     if( top ) top->deleteNode();
   };
 
-  bool loadTree( buffer &input )
+  bool loadTree( bitStream &input )
   {
     top = new node;
     return top->appendNode( input );
@@ -260,7 +221,7 @@ public:
 
   bool createTreeFrom( ifstream &input )
   {
-    map<bitArr, uint64_t> characterCounts;
+    map<bitArray, uint64_t> characterCounts;
     if( !charFrequency( input, characterCounts ) )
       return false;
 
@@ -271,7 +232,7 @@ public:
     vector< pair<node *, uint64_t > > charArray;
     charArray.reserve( characterCounts.size() );
 
-    for( const pair<bitArr, uint64_t> &letter: characterCounts )
+    for( const pair<bitArray, uint64_t> &letter: characterCounts )
     {
       node *leaf = new node( letter.first );
       charArray.push_back( pair<node *, uint64_t>( leaf, letter.second ) );
@@ -309,30 +270,30 @@ public:
     return true;
   };
 
-  bool decompress( buffer &input, ofstream &output ) const
+  bool decompress( bitStream &input, ofstream &output ) const
   {
-    bitArr chunkType = input.get( 1 );
+    bitArray chunkType = input.get( 1 );
     uint16_t chunkSize;
 //    bool firstChunk = true;
-    while( chunkType == bitArr( 1, 1 ) )
+    while( chunkType == bitArray( 1, 1 ) )
     {
       if( !readChunk( input, output ) ) return false;
       chunkType = input.get( 1 );
 //      firstChunk = false;
     }
-    if( chunkType != bitArr( 0, 1 ) )
+    if( chunkType != bitArray( 0, 1 ) )
       return false;
 
-    bitArr chunkSizeInfo = input.get( 12 );
+    bitArray chunkSizeInfo = input.get( 12 );
     if( !chunkSizeInfo ) return false;
-    chunkSize = chunkSizeInfo.bitArray;
+    chunkSize = chunkSizeInfo.bits;
 //    if( firstChunk && !chunkSize ) return false;
     if( !readChunk( input, output, chunkSize ) ) return false;
-    if( input.get( 8 ) != bitArr() ) return false; // input file cant contain one whole useless byte
+    if( input.get( 8 ) != bitArray() ) return false; // input file cant contain one whole useless byte
     return true;
   };
 
-  bool compress( ifstream &inFile, buffer &output ) const
+  bool compress( ifstream &inFile, bitStream &output ) const
   {
     printHuffCode( output );
     while( printChunk( inFile, output ) );
@@ -341,21 +302,13 @@ public:
     return true;
   };
 
-#ifndef __PROGTEST__
-  void printCodes() const
-  {
-    if( top ) walkTree( top, bitArr( 0, 0 ) );
-    cout << endl;
-  };
-#endif /* __PROGTEST__ */
-
 private:
   struct node
   {
     node *parent;
     node *left;
     node *right;
-    bitArr unicode;
+    bitArray unicode;
 //    uint64_t count;
 //    uint32_t unicode;
 
@@ -363,7 +316,7 @@ private:
       : parent( nullptr), left( nullptr ), right( nullptr )
     {};
 
-    node( const bitArr &unicode )
+    node( const bitArray &unicode )
       : parent( nullptr), left( nullptr ), right( nullptr ), unicode( unicode )
     {};
 
@@ -371,16 +324,16 @@ private:
       : parent( nullptr ), left( left ), right ( right )
     {};
 
-    bool appendNode( buffer &input )
+    bool appendNode( bitStream &input )
     {
-      bitArr first = input.get( 1 );
-      if( first == bitArr( 0, 1 ) )
+      bitArray first = input.get( 1 );
+      if( first == bitArray( 0, 1 ) )
       {
         left = new node;
         right = new node;
         return left->appendNode( input ) && right->appendNode( input );
       }
-      else if( first == bitArr( 1, 1 ) )
+      else if( first == bitArray( 1, 1 ) )
         return input.getUnicode( unicode );
       else return false;
     };
@@ -392,26 +345,26 @@ private:
       delete this;
     };
 
-    void printTree( buffer &output ) const
+    void printTree( bitStream &output ) const
     {
       if( left && right )
       {
-        output.write( bitArr( 0, 1 ) );
+        output.write( bitArray( 0, 1 ) );
         left->printTree( output );
         right->printTree( output );
         return;
       }
-      output.write( bitArr( 1, 1 ) );
+      output.write( bitArray( 1, 1 ) );
       output.write( unicode );
     };
 
-    void printCode( buffer &output ) const
+    void printCode( bitStream &output ) const
     {
       if( parent )
       {
         parent->printCode( output );
-        if( parent->left == this ) output.write( bitArr( 0, 1 ) );
-        if( parent->right == this ) output.write( bitArr( 1, 1) );
+        if( parent->left == this ) output.write( bitArray( 0, 1 ) );
+        if( parent->right == this ) output.write( bitArray( 1, 1) );
       }
     };
   };
@@ -459,61 +412,62 @@ private:
     return temp;
   };
 
-  static bool charFrequency( ifstream &input, map<bitArr, uint64_t> &charFreq )
+  static bool charFrequency( ifstream &input, map<bitArray, uint64_t> &charFreq )
   {
     while( true )
     {
-      bitArr unicodeChar = getUnicode( input );
+      bitArray unicodeChar = getUnicode( input );
       if( !unicodeChar )
       {
-        return unicodeChar.bitArray == 0b1;
+        return unicodeChar.bits == 0b1;
       }
       charFreq[ unicodeChar ]++;
     }
   };
 
-  static bitArr getUnicode( ifstream &input )
+  static bitArray getUnicode( ifstream &input )
   {
     uint32_t first = 0;
     input.read( (char *)&first, 1 );
     if( !input.good() )
-      return bitArr( input.eof(), 0 );
+      return bitArray( input.eof(), 0 );
 
     uint8_t byteCount = __builtin_clz( ~( first << 24 ) );
-    if( byteCount == 1 || byteCount > 4 ) return bitArr();
+    if( byteCount == 1 || byteCount > 4 )
+      return bitArray();
 
-    bitArr unicode( first, 8 );
+    bitArray unicode( first, 8 );
 
     for( uint8_t byte = 1; byte < byteCount; ++byte )
     {
       uint8_t trail;
       input.read( (char *)&trail, 1 );
-      if( !input.good() ) return bitArr();
-      if( ( trail & ( 0b11 << 6 ) ) != ( 1 << 7 ) ) return bitArr();
+      if( !input.good() ) return bitArray();
+      if( ( trail & ( 0b11 << 6 ) ) != ( 1 << 7 ) ) return bitArray();
       unicode += trail;
     }
 
-    if( unicode.bitArray >= 0xf4908080ul ) return bitArr();
+    if( unicode.bits >= 0xf4908080ul ) return bitArray();
     return unicode;
   };
 
-  void printHuffCode( buffer &output ) const
+  void printHuffCode( bitStream &output ) const
   {
     if( !top ) return;
     top->printTree( output );
   };
 
-  bool readChunk( buffer &input, ofstream &output, uint16_t chunkSize = 4096 ) const
+  bool readChunk( bitStream &input, ofstream &output, uint16_t chunkSize = 4096 ) const
   {
     while( chunkSize )
     {
       node *current = top;
       while( current->right || current->left )
       {
-        bitArr dir = input.get( 1 );
-        if( dir == bitArr( 0, 1 ) )
+        bitArray dir = input.get( 1 );
+        if( dir == bitArray( 0, 1 ) )
           current = current->left;
-        else if( dir == bitArr( 1, 1 ) )
+        else if( dir == bitArray( 1, 1 ) )
           current = current->right;
         else return false;
       }
@@ -523,57 +477,40 @@ private:
     return true;
   };
 
-  bool printChunk( ifstream &inFile, buffer &output ) const
+  bool printChunk( ifstream &inFile, bitStream &output ) const
   {
-    vector<bitArr> chunk;
+    vector<bitArray> chunk;
     chunk.reserve( 4096 );
 
     for( uint16_t i = 0; i < 4096; ++i )
     {
-      bitArr unicodeChar = getUnicode( inFile );
+      bitArray unicodeChar = getUnicode( inFile );
       if( !unicodeChar ) break; // eof
       chunk.push_back( move(unicodeChar) );
     }
 
     if( chunk.size() < 4096 )
     {
-      output.write( bitArr( 0, 1 ) );
-      output.write( bitArr( chunk.size(), 12 ) );
+      output.write( bitArray( 0, 1 ) );
+      output.write( bitArray( chunk.size(), 12 ) );
       printBlock( chunk, output );
       return false;
     }
-    output.write( bitArr( 1, 1 ) );
+    output.write( bitArray( 1, 1 ) );
     printBlock( chunk, output );
     return true;
   };
 
-  void printBlock( const vector<bitArr> &data, buffer &output ) const
+  void printBlock( const vector<bitArray> &data, bitStream &output ) const
   {
-    for( const bitArr &unicodeChar: data )
+    for( const bitArray &unicodeChar: data )
     {
       lookUpTable.at( unicodeChar )->printCode( output );
     }
   };
 
-#ifndef __PROGTEST__
-  void walkTree( node *current, const bitArr &code ) const
-  {
-    if( current->left && current->right )
-    {
-      walkTree( current->left, bitArr( 0, 1 ) + code );
-      walkTree( current->right, bitArr( 1, 1 ) + code );
-    }
-    else
-    {
-      cout << hex << (int)code.length << "-" << code.bitArray
-       << ":" << current->unicode.bitArray << endl;
-    }
-  };
-#endif /* __PROGTEST__ */
-
-
   node *top;
-  map< bitArr, node * > lookUpTable;
+  map< bitArray, node * > lookUpTable;
 };
 
 
@@ -581,21 +518,19 @@ bool decompressFile ( const char * inFileName, const char * outFileName )
 {
   fstream inFile( inFileName, ifstream::in | ifstream::binary );
   if( !inFile.good() ) return false;
-  //inFile.clear();
 
   ofstream outFile( outFileName, fstream::binary | fstream::trunc );
   if( !outFile.good() ) return false; 
-  //outFile.clear();
 
-  buffer input( inFile );
+  bitStream input( inFile );
 
   huffmanTree huff;
 
   if( !huff.loadTree( input ) ) return false;
   if( !huff.decompress( input, outFile ) ) return false;
 
-  if( inFile.bad() ) return false;
-  if( outFile.fail() ) return false;
+  // inFile can fail because of EOF but cant have io problem
+  if( inFile.bad() || outFile.fail() ) return false;
 
   return true;
 }
@@ -604,26 +539,20 @@ bool compressFile ( const char * inFileName, const char * outFileName )
 {
   ifstream inFile( inFileName, ifstream::binary );
   if( !inFile.good() ) return false;
-  //inFile.clear();
 
   huffmanTree huff;
 
   if( !huff.createTreeFrom( inFile ) ) return false;
 
-#ifndef __PROGTEST__
-//  huff.printCodes();
-#endif /* __PROGTEST__ */
-
   fstream outFile( outFileName, fstream::out | fstream::binary | fstream::trunc );
   if( !outFile.good() ) return false; 
-  //outFile.clear();
 
-  buffer output( outFile );
+  bitStream output( outFile );
 
   if( !huff.compress( inFile, output ) ) return false;
 
-  if( inFile.bad() ) return false;
-  if( outFile.fail() ) return false;
+  // inFile can fail because of EOF but cant have io problem
+  if( inFile.bad() || outFile.fail() ) return false;
 
   return true;
 }
@@ -631,8 +560,8 @@ bool compressFile ( const char * inFileName, const char * outFileName )
 #ifndef __PROGTEST__
 bool identicalFiles ( const char * fileName1, const char * fileName2 )
 {
-  ifstream f1 (fileName1, ifstream::binary | ifstream::ate );
-  ifstream f2 (fileName2, ifstream::binary | ifstream::ate );
+  ifstream f1 ( fileName1, ifstream::binary | ifstream::ate );
+  ifstream f2 ( fileName2, ifstream::binary | ifstream::ate );
 
   if( f1.fail() || f2.fail() )
     return false; //file problem
@@ -643,9 +572,9 @@ bool identicalFiles ( const char * fileName1, const char * fileName2 )
   //seek back to beginning and use std::equal to compare contents
   f1.seekg( 0, ifstream::beg );
   f2.seekg( 0, ifstream::beg );
-  return equal( istreambuf_iterator<char>(f1.rdbuf()),
+  return equal( istreambuf_iterator<char>( f1.rdbuf() ),
                 istreambuf_iterator<char>(),
-                istreambuf_iterator<char>(f2.rdbuf()));
+                istreambuf_iterator<char>( f2.rdbuf() ));
 }
 
 int main ( void )
@@ -759,6 +688,14 @@ int main ( void )
   assert ( identicalFiles ( "tests/extra9.orig", "tempfile" ) );
 
   assert ( !decompressFile ( "tests/in_4531057.bin", "tempfile" ) );
+
+  assert ( compressFile ( "tests/random1-utf8.orig", "tempfile1" ) );
+  assert ( decompressFile ( "tempfile1", "tempfile" ) );
+  assert ( identicalFiles ( "tests/random1-utf8.orig", "tempfile" ) );
+
+  assert ( compressFile ( "tests/random2-utf8.orig", "tempfile1" ) );
+  assert ( decompressFile ( "tempfile1", "tempfile" ) );
+  assert ( identicalFiles ( "tests/random2-utf8.orig", "tempfile" ) );
 
   return 0;
 }
