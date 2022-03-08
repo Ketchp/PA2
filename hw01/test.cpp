@@ -100,6 +100,9 @@ struct bitArray
     return length;
   };
 
+  /**
+   * @brief Prints contents to stream
+   */
   void print( ofstream &stream ) const
   {
     for( int8_t shift = length - 8; shift >= 0; shift -= 8 )
@@ -110,68 +113,98 @@ struct bitArray
   };
 };
 
-
+/**
+ * @brief class for I/O operations with individual bits
+ */
 class bitStream
 {
 public:
   const static uint8_t BUFFER_SIZE = 64;
-  bitStream( fstream &stream)
-    : prefix( 0u ), bufferLen( 0u ), stream( stream )
+  bitStream( fstream &stream )
+    : buffer( 0 ), bufferLen( 0 ), stream( stream )
   {};
 
+  /**
+   * @brief Pops length of bits from stream
+   * 
+   * @param length number of bits
+   */
   bitArray get( const uint8_t length )
   {
     fillBuffer();
-    // invalid bitStream: eof or file during read
-    if( length > bufferLen ) return bitArray(); 
-    uint64_t temp = prefix;
+    if( length > bufferLen ) return bitArray(); // invalid bitStream: eof or file during read
+    uint64_t temp = buffer;
     temp >>= bufferLen - length;
     bufferLen -= length;
-    prefix &= ones( bufferLen );    // discard front bits that have been read
+    buffer &= ones( bufferLen );    // discard front bits that have been read
     return bitArray( temp, length );
   };
 
+  /**
+   * @brief Write bits to stream
+   */
   void write( const bitArray &data )
   {
-    prefix <<= data.length;
-    prefix |= data.bits;
+    buffer <<= data.length;
+    buffer |= data.bits;
     bufferLen += data.length;
     while( bufferLen >= 8 ) writeByte();
   };
 
+  /**
+   * @brief Padds bits in buffer with zeros to multiple of byte
+   */
   void flush()
   {
     if( !bufferLen ) return;
-    prefix <<= 8 - bufferLen;
+    buffer <<= 8 - bufferLen;
     bufferLen = 8;
     writeByte();
   };
 
-  bool getUnicode( bitArray &target )
+  /**
+   * @brief Extracts UTF-8 byte representation of character to target
+   * 
+   * @return true on success
+   * @return false bad UTF-8 format in stream
+   */
+  bool getUtf8( bitArray &target )
   {
     bitArray first = get( 8 );
     if( !first ) return false;
 
     // 0b<3 zero bytes> 1110 XXXX ---> ( << 24 ) 
     // 0b1110 XXXX <3 zero bytes> ---> ~
-    // 0b0001 XXXX <3 ones bytes> ---> ~
-
+    // 0b0001 XXXX <3 ones bytes> ---> clz: number of leading zeros
     uint8_t byteCount = __builtin_clz( ~( first.bits << 24 ) );
+
+    // 1 means first == 10XX XXXX (intermediate byte as first byte)
     if( byteCount == 1 || byteCount > 4 ) return false;
 
     for( uint8_t byte = 1; byte < byteCount; ++byte )
     {
-      bitArray trail = get( 8 );
-      if( trail.getFirst( 2 ) == bitArray( 0b10, 2 ) )
-        first += trail;
-      else return false;
+      bitArray intermediate = get( 8 );
+      if( intermediate.getFirst( 2 ) != bitArray( 0b10, 2 ) )
+        return false;
+      first += intermediate;
     }
+
+    /* 0xf4908080 ==
+     * 0b 1111 0100
+     *    1001 0000
+     *    1000 0000
+     *    1000 0000 ==
+     * max UTF-8 value
+     */
     if( first.bits >= 0xf4908080ul ) return bitArray();
     target = first;
     return true;
   };
   
 private:
+  /**
+   * @brief Fills internal buffer from underlying stream as much as possible
+   */
   void fillBuffer()
   {
     while( bufferLen + 8 <= BUFFER_SIZE )
@@ -179,56 +212,257 @@ private:
       uint8_t newByte;
       stream.read( (char *)&newByte, 1 );
       if( !stream.good() ) return;
-      prefix <<= 8;
-      prefix |= newByte;
+      buffer <<= 8;
+      buffer |= newByte;
       bufferLen += 8;
     }
   };
 
+  /**
+   * @brief Writes byte to underlying stream
+   */
   void writeByte()
   {
-    uint64_t temp = prefix;
+    uint64_t temp = buffer;
     bufferLen -= 8;
-    prefix &= ones( bufferLen );
+    buffer &= ones( bufferLen );
     temp >>= bufferLen;
     stream.write( (char *)&temp, 1 );
   };
 
-  // bufferLen = 7 means: prefix = b'... XXXX XXXX X100 1010'
-  uint64_t prefix;
+  // bufferLen = 7 means: buffer = b'... XXXX XXXX X100 1010'
+  uint64_t buffer;
   uint8_t bufferLen; //size in bits
   fstream &stream;
 };
 
 
-class huffmanTree
+class huffmanCode
 {
 public:
-  huffmanTree()
+  huffmanCode()
     :top( nullptr )
   {};
 
-  ~huffmanTree()
+  ~huffmanCode()
   {
     if( top ) top->deleteNode();
   };
 
+  bool decompress( const char *inFileName, const char *outFileName )
+  {
+    fstream inFile( inFileName, ifstream::in | ifstream::binary );
+    if( !inFile.good() ) return false;
+
+    ofstream output( outFileName, fstream::binary | fstream::trunc );
+    if( !output.good() ) return false; 
+
+    bitStream input( inFile );
+
+    if( !loadTree( input ) ) return false;
+
+    if( !readChunks( input, output ) ) return false;
+
+    // inFile can fail because of EOF but cant have io problem
+    if( inFile.bad() || output.fail() ) return false;
+
+    return true;
+  };
+
+  bool compress( const char *inFileName, const char *outFileName )
+  {
+    ifstream inFile( inFileName, ifstream::binary );
+    if( !inFile.good() ) return false;
+
+    if( !createTreeFrom( inFile ) ) return false;
+
+    fstream outFile( outFileName, fstream::out | fstream::binary | fstream::trunc );
+    if( !outFile.good() ) return false; 
+
+    bitStream output( outFile );
+
+    printHuffCode( output );
+    while( printChunk( inFile, output ) );
+
+    output.flush();
+
+    // inFile can fail because of EOF but cant have io problem
+    if( inFile.bad() || outFile.fail() ) return false;
+    return true;
+  };
+
+private:
+  /**
+   * @brief structure for nodes of huffman tree
+   * 0: left
+   * 1: right
+   * left == right == nullptr means that node is leaf and utf8 stores
+   * valid utf8 bytes for series of bits from top to current node
+   */
+  struct node
+  {
+    node *parent;
+    node *left;
+    node *right;
+    bitArray utf8;
+
+    node()
+      : parent( nullptr), left( nullptr ), right( nullptr )
+    {};
+
+    // leaf node constructor
+    node( const bitArray &utf8 )
+      : parent( nullptr), left( nullptr ), right( nullptr ), utf8( utf8 )
+    {};
+
+    // parent node constructor
+    node( node *left, node *right )
+      : parent( nullptr ), left( left ), right ( right )
+    {};
+
+    /**
+     * @brief Creates subtree from this node
+     * 
+     * @return true on success
+     * @return false on corrupted UTF-8 characted / EOF / io-error 
+     */
+    bool appendNode( bitStream &input )
+    {
+      bitArray first = input.get( 1 );
+      if( first == bitArray( 0, 1 ) )
+      {
+        left = new node;
+        right = new node;
+        return left->appendNode( input ) && right->appendNode( input );
+      }
+      else if( first == bitArray( 1, 1 ) )
+        return input.getUtf8( utf8 );
+      else return false;
+    };
+
+    /**
+     * @brief free's node memory
+     */
+    void deleteNode()
+    {
+      if( left ) left->deleteNode();
+      if( right ) right->deleteNode();
+      delete this;
+    };
+
+    /**
+     * @brief Prints huffman tree to compressed file
+     */
+    void printTree( bitStream &output ) const
+    {
+      if( left && right )
+      {
+        output.write( bitArray( 0, 1 ) );
+        left->printTree( output );
+        right->printTree( output );
+        return;
+      }
+      output.write( bitArray( 1, 1 ) );
+      output.write( utf8 );
+    };
+
+    /**
+     * @brief Prints huffman code of current node
+     * Works by recursively calls parent to top and writes to output while returning
+     */
+    void printCode( bitStream &output ) const
+    {
+      if( parent )
+      {
+        parent->printCode( output );
+        if( parent->left == this ) output.write( bitArray( 0, 1 ) );
+        if( parent->right == this ) output.write( bitArray( 1, 1) );
+      }
+    };
+  };
+
+/* VVV DECOMPRESSION PRIVATE METHODS VVV */
+
+  /**
+   * @brief Loads huffman tree from file
+   * 
+   * @return true on success
+   * @return false on corrupted UTF-8 characted / EOF / io-error 
+   */
   bool loadTree( bitStream &input )
   {
     top = new node;
     return top->appendNode( input );
   };
 
+  /**
+   * @brief Read chunks from input and decodes them
+   * Chunk starting 0b1 means 4096 compressed UTF-8 chars follows
+   * Chunk starting 0b0 is followed by 12bits representing count of UTF-8 chars
+   * @return true on success
+   * @return false bad/corrupted input format
+   */
+  bool readChunks( bitStream &input, ofstream &output ) const
+  {
+    bitArray chunkType = input.get( 1 );
+    while( chunkType == bitArray( 1, 1 ) )
+    {
+      if( !readChunk( input, output ) ) return false;
+      chunkType = input.get( 1 );
+    }
+
+    if( chunkType != bitArray( 0, 1 ) )
+      return false;
+
+    bitArray chunkSize = input.get( 12 );
+    if( !chunkSize ) return false;
+    if( !readChunk( input, output, chunkSize.bits ) ) return false;
+
+    return input.get( 8 ) == bitArray(); // input file cant contain one whole useless byte
+  };
+
+  /**
+   * @brief Reads huffman code from input and prints decoded data to output
+   * 
+   * @param chunkSize count of UTF-8 chracters needed at output
+   * @return true on succes
+   * @return false EOF, io-error occured before chuckSize characters could be read
+   */
+  bool readChunk( bitStream &input, ofstream &output, uint16_t chunkSize = 4096 ) const
+  {
+    while( chunkSize )
+    {
+      node *current = top;
+      while( current->right || current->left )
+      {
+        bitArray dir = input.get( 1 );
+        if( dir == bitArray( 0, 1 ) )
+          current = current->left;
+        else if( dir == bitArray( 1, 1 ) )
+          current = current->right;
+        else return false;
+      }
+      current->utf8.print( output );
+      --chunkSize;
+    }
+    return true;
+  };
+
+/* VVV COMPRESSION PRIVATE METHODS VVV */
+
+  /**
+   * @brief Create a huffman tree/code to compress input
+   * 
+   * @return true on success
+   * @return false on bad UTF-8 coding or IO-error
+   */
   bool createTreeFrom( ifstream &input )
   {
     map<bitArray, uint64_t> characterCounts;
     if( !charFrequency( input, characterCounts ) )
       return false;
 
-    if( input.bad() ) return false;
-    input.clear();
-    input.seekg( 0 );
-
+    // map can't be sorted
     vector< pair<node *, uint64_t > > charArray;
     charArray.reserve( characterCounts.size() );
 
@@ -250,141 +484,84 @@ public:
     for( const pair<node *, uint64_t> &letter: charArray )
       source.push( move(letter) );
 
-/* from ordered queue ( a_1, a_2, a_3, a_4 ... a_n ) we want to merge to a_123...
- * we need find two smallest elems( a_i, a_j ) fast so queue needs to be always ordered
- * removal of those elems and insertion of newly merged a_ij also needs to be fast
- * we can achieve this by having two ordered queues source -> target
- * two smallest elements will be either (a_1, a_2)/(a_1, b_1)/(b_1, b_2)
- * we always pick smallest elems so each new merged is greater or equal than previous
- * insertion will always happen to end of target to maintain order
- * after some steps source will become empty
- * after n - 1 steps there will be only single element in target
- */
+    /* from ordered queue ( a_1, a_2, a_3, a_4 ... a_n ) we want to merge to a_123...
+    * we need find two smallest elems( a_i, a_j ) fast so queue needs to be always ordered
+    * removal of those elems and insertion of newly merged a_ij also needs to be fast
+    * we can achieve this by having two ordered queues source -> target
+    * two smallest elements will be either (a_1, a_2)/(a_1, b_1)/(b_1, b_2)
+    * we always pick smallest elems so each new merged elem is greater or equal than previous
+    * insertion will always happen to end of target to maintain order
+    * after some steps source will become empty, then
+    * after n - 1 steps there will be only single element in target
+    */
 
     // iterate until we have only one elem in target ( no in source )
     while( target.size() > 1 || source.size() )
-      target.push( merge( getSmallest( source, target ),
-                          getSmallest( source, target ) ) );
+      target.push( merge( popSmallest( source, target ),
+                          popSmallest( source, target ) ) );
 
     top = target.front().first;
     return true;
   };
 
-  bool decompress( bitStream &input, ofstream &output ) const
+  /**
+   * @brief Stores UTF-8 character frequencies to charFreq
+   * 
+   * @param charFreq map for storing <UTF-8, count> pairs
+   * @return true on success
+   * @return false on bad UTF-8 coding or IO-error
+   */
+  static bool charFrequency( ifstream &input, map<bitArray, uint64_t> &charFreq )
   {
-    bitArray chunkType = input.get( 1 );
-    uint16_t chunkSize;
-//    bool firstChunk = true;
-    while( chunkType == bitArray( 1, 1 ) )
+    while( true )
     {
-      if( !readChunk( input, output ) ) return false;
-      chunkType = input.get( 1 );
-//      firstChunk = false;
+      bitArray symbol = getUtf8( input );
+      if( !symbol )
+      {
+        input.clear();
+        input.seekg( 0 );
+        return symbol == bitArray( 1, 0 );
+      }
+      charFreq[ symbol ]++;
     }
-    if( chunkType != bitArray( 0, 1 ) )
-      return false;
-
-    bitArray chunkSizeInfo = input.get( 12 );
-    if( !chunkSizeInfo ) return false;
-    chunkSize = chunkSizeInfo.bits;
-//    if( firstChunk && !chunkSize ) return false;
-    if( !readChunk( input, output, chunkSize ) ) return false;
-    if( input.get( 8 ) != bitArray() ) return false; // input file cant contain one whole useless byte
-    return true;
   };
 
-  bool compress( ifstream &inFile, bitStream &output ) const
+  /**
+   * @brief Get the Utf8 bytes from input
+   * Warning: function gets UTF-8 representation not unicode since that is almost not needed
+   */
+  static bitArray getUtf8( ifstream &input )
   {
-    printHuffCode( output );
-    while( printChunk( inFile, output ) );
+    uint32_t first = 0;
+    input.read( (char *)&first, 1 );
+    if( !input.good() )
+      return bitArray( !input.bad(), 0 );
 
-    output.flush();
-    return true;
+    uint8_t byteCount = __builtin_clz( ~( first << 24 ) );
+    if( byteCount == 1 || byteCount > 4 )
+      return bitArray();
+
+    bitArray utf8( first, 8 );
+
+    for( uint8_t byte = 1; byte < byteCount; ++byte )
+    {
+      uint8_t trail;
+      input.read( (char *)&trail, 1 );
+      if( !input.good() ) return bitArray();
+      if( ( trail & ( 0b11 << 6 ) ) != ( 1 << 7 ) ) return bitArray();
+      utf8 += trail;
+    }
+
+    if( utf8.bits >= 0xf4908080ul ) return bitArray();
+    return utf8;
   };
 
-private:
-  struct node
-  {
-    node *parent;
-    node *left;
-    node *right;
-    bitArray unicode;
-//    uint64_t count;
-//    uint32_t unicode;
-
-    node()
-      : parent( nullptr), left( nullptr ), right( nullptr )
-    {};
-
-    node( const bitArray &unicode )
-      : parent( nullptr), left( nullptr ), right( nullptr ), unicode( unicode )
-    {};
-
-    node( node *left, node *right )
-      : parent( nullptr ), left( left ), right ( right )
-    {};
-
-    bool appendNode( bitStream &input )
-    {
-      bitArray first = input.get( 1 );
-      if( first == bitArray( 0, 1 ) )
-      {
-        left = new node;
-        right = new node;
-        return left->appendNode( input ) && right->appendNode( input );
-      }
-      else if( first == bitArray( 1, 1 ) )
-        return input.getUnicode( unicode );
-      else return false;
-    };
-
-    void deleteNode()
-    {
-      if( left ) left->deleteNode();
-      if( right ) right->deleteNode();
-      delete this;
-    };
-
-    void printTree( bitStream &output ) const
-    {
-      if( left && right )
-      {
-        output.write( bitArray( 0, 1 ) );
-        left->printTree( output );
-        right->printTree( output );
-        return;
-      }
-      output.write( bitArray( 1, 1 ) );
-      output.write( unicode );
-    };
-
-    void printCode( bitStream &output ) const
-    {
-      if( parent )
-      {
-        parent->printCode( output );
-        if( parent->left == this ) output.write( bitArray( 0, 1 ) );
-        if( parent->right == this ) output.write( bitArray( 1, 1) );
-      }
-    };
-  };
-                       
-  inline static int8_t compPair( const pair<node *, uint64_t> &a,
-                                 const pair<node *, uint64_t> &b )
-  {
-    return ( a.second > b.second ) - ( b.second > a.second );
-  };
-
-  static pair<node *, uint64_t> merge( pair<node *, uint64_t> a,
-                                       pair<node *, uint64_t> b )
-  {
-    pair<node *, uint64_t> temp( new node( a.first, b.first ), a.second + b.second );
-    a.first->parent = temp.first;
-    b.first->parent = temp.first;
-    return temp;
-  };
-
-  static pair<node *, uint64_t> getSmallest( queue< pair<node *, uint64_t> > &queue_a,
+  /**
+   * @brief Pop and return smallest element from two sorted queues
+   * comparision is made on second item of pair ( occurence )
+   * @return pair<node *, uint64_t> pair with smallest .second
+   */
+  static pair<node *, uint64_t> popSmallest( queue< pair<node *, uint64_t> > &queue_a,
                                              queue< pair<node *, uint64_t> > &queue_b )
   {
     pair<node *, uint64_t> temp;
@@ -411,150 +588,118 @@ private:
     queue_b.pop();
     return temp;
   };
-
-  static bool charFrequency( ifstream &input, map<bitArray, uint64_t> &charFreq )
+  
+  /**
+   * @brief compair occurence of < node, int > pair
+   * 
+   * @return 1 if a > b, -1 if a < b, 0 otherwise
+   */
+  inline static int8_t compPair( const pair<node *, uint64_t> &a,
+                                 const pair<node *, uint64_t> &b )
   {
-    while( true )
-    {
-      bitArray unicodeChar = getUnicode( input );
-      if( !unicodeChar )
-      {
-        return unicodeChar.bits == 0b1;
-      }
-      charFreq[ unicodeChar ]++;
-    }
+    return ( a.second > b.second ) - ( b.second > a.second );
   };
 
-  static bitArray getUnicode( ifstream &input )
+  /**
+   * @brief Create pair < parent node, combined occurence >
+   * 
+   * @param a < child node, occurence >
+   * @param b < child node, occurence >
+   * @return pair<node *, uint64_t> 
+   */
+  static pair<node *, uint64_t> merge( pair<node *, uint64_t> a,
+                                       pair<node *, uint64_t> b )
   {
-    uint32_t first = 0;
-    input.read( (char *)&first, 1 );
-    if( !input.good() )
-      return bitArray( input.eof(), 0 );
-
-    uint8_t byteCount = __builtin_clz( ~( first << 24 ) );
-    if( byteCount == 1 || byteCount > 4 )
-      return bitArray();
-
-    bitArray unicode( first, 8 );
-
-    for( uint8_t byte = 1; byte < byteCount; ++byte )
-    {
-      uint8_t trail;
-      input.read( (char *)&trail, 1 );
-      if( !input.good() ) return bitArray();
-      if( ( trail & ( 0b11 << 6 ) ) != ( 1 << 7 ) ) return bitArray();
-      unicode += trail;
-    }
-
-    if( unicode.bits >= 0xf4908080ul ) return bitArray();
-    return unicode;
+    pair<node *, uint64_t> temp( new node( a.first, b.first ), a.second + b.second );
+    a.first->parent = temp.first;
+    b.first->parent = temp.first;
+    return temp;
   };
 
+  /**
+   * @brief prints Huffman tree mapping UTF-8 <-> huffman code
+   */
   void printHuffCode( bitStream &output ) const
   {
     if( !top ) return;
     top->printTree( output );
   };
 
-  bool readChunk( bitStream &input, ofstream &output, uint16_t chunkSize = 4096 ) const
-  {
-    while( chunkSize )
-    {
-      node *current = top;
-      while( current->right || current->left )
-      {
-        bitArray dir = input.get( 1 );
-        if( dir == bitArray( 0, 1 ) )
-          current = current->left;
-        else if( dir == bitArray( 1, 1 ) )
-          current = current->right;
-        else return false;
-      }
-      current->unicode.print( output );
-      --chunkSize;
-    }
-    return true;
-  };
-
+  /**
+   * @brief compresses up to 4096 UTF-8 characters
+   * 
+   * @return true if there is still more data in inFile
+   * @return false on EOF
+   */
   bool printChunk( ifstream &inFile, bitStream &output ) const
   {
-    vector<bitArray> chunk;
-    chunk.reserve( 4096 );
+    // chunk = {0/1} <block>
+    // block = bit representation for <0, 4096> utf-8 characters
+    vector<bitArray> block;
+    block.reserve( 4096 );
 
     for( uint16_t i = 0; i < 4096; ++i )
     {
-      bitArray unicodeChar = getUnicode( inFile );
-      if( !unicodeChar ) break; // eof
-      chunk.push_back( move(unicodeChar) );
+      const bitArray symbol = getUtf8( inFile );
+      if( !symbol ) break; // eof
+      block.push_back( symbol );
     }
 
-    if( chunk.size() < 4096 )
+    if( block.size() < 4096 )
     {
       output.write( bitArray( 0, 1 ) );
-      output.write( bitArray( chunk.size(), 12 ) );
-      printBlock( chunk, output );
-      return false;
+      output.write( bitArray( block.size(), 12 ) );
     }
-    output.write( bitArray( 1, 1 ) );
-    printBlock( chunk, output );
-    return true;
+    else output.write( bitArray( 1, 1 ) );
+
+    printBlock( block, output );
+
+    return block.size() == 4096;
   };
 
+  /**
+   * @brief prints compressed data to output
+   */
   void printBlock( const vector<bitArray> &data, bitStream &output ) const
   {
-    for( const bitArray &unicodeChar: data )
+    for( const bitArray &symbol: data )
     {
-      lookUpTable.at( unicodeChar )->printCode( output );
+      lookUpTable.at( symbol )->printCode( output );
     }
   };
 
+  /**
+   * @brief huffman code  --->  UTF-8
+   * top of huffman tree
+   */
   node *top;
+
+  /**
+   * @brief UTF-8  --->  huffman code
+   * table stores ptr only to leaf that stores utf8 bytes as opposed to
+   * pointing directly to bitArray which could be directly printed
+   * this is because bitArray is limited to length of 32 bits whereas
+   * huffman tree can be highly unbalanced
+   * for example occurances { 1, 2, 4, 8, ... 2^n } of characters
+   * produces tree with depth n-1, which means that it would be needed
+   * n-2 bits to represent all codes.
+   * For n = 35 codes wouldn't fit to bitArray, this could happen for file with size ~68.7GB
+   */
   map< bitArray, node * > lookUpTable;
+
 };
 
 
 bool decompressFile ( const char * inFileName, const char * outFileName )
 {
-  fstream inFile( inFileName, ifstream::in | ifstream::binary );
-  if( !inFile.good() ) return false;
-
-  ofstream outFile( outFileName, fstream::binary | fstream::trunc );
-  if( !outFile.good() ) return false; 
-
-  bitStream input( inFile );
-
-  huffmanTree huff;
-
-  if( !huff.loadTree( input ) ) return false;
-  if( !huff.decompress( input, outFile ) ) return false;
-
-  // inFile can fail because of EOF but cant have io problem
-  if( inFile.bad() || outFile.fail() ) return false;
-
-  return true;
+  huffmanCode huff;
+  return huff.decompress( inFileName, outFileName );
 }
 
 bool compressFile ( const char * inFileName, const char * outFileName )
 {
-  ifstream inFile( inFileName, ifstream::binary );
-  if( !inFile.good() ) return false;
-
-  huffmanTree huff;
-
-  if( !huff.createTreeFrom( inFile ) ) return false;
-
-  fstream outFile( outFileName, fstream::out | fstream::binary | fstream::trunc );
-  if( !outFile.good() ) return false; 
-
-  bitStream output( outFile );
-
-  if( !huff.compress( inFile, output ) ) return false;
-
-  // inFile can fail because of EOF but cant have io problem
-  if( inFile.bad() || outFile.fail() ) return false;
-
-  return true;
+  huffmanCode huff;
+  return huff.compress( inFileName, outFileName );
 }
 
 #ifndef __PROGTEST__
