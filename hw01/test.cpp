@@ -482,7 +482,7 @@ private:
 
     queue< pair<node *, uint64_t> > source, target;
     for( const pair<node *, uint64_t> &letter: charArray )
-      source.push( move(letter) );
+      source.push( letter );
 
     /* from ordered queue ( a_1, a_2, a_3, a_4 ... a_n ) we want to merge to a_123...
     * we need find two smallest elems( a_i, a_j ) fast so queue needs to be always ordered
@@ -567,24 +567,24 @@ private:
     pair<node *, uint64_t> temp;
     if( !queue_a.size() ) // no elems in queue_a
     {
-      temp = move( queue_b.front() );
+      temp = queue_b.front();
       queue_b.pop();
       return temp;
     }
     if( !queue_b.size() ) // no elems in queue_b
     {
-      temp = move( queue_a.front() );
+      temp = queue_a.front();
       queue_a.pop();
       return temp;
     }
     // there is at least one elem in each queue
     if( compPair( queue_a.front(), queue_b.front() ) <= 0 )
     {
-      temp = move( queue_a.front() );
+      temp = queue_a.front();
       queue_a.pop();
       return temp;
     }
-    temp = move( queue_b.front() );
+    temp = queue_b.front();
     queue_b.pop();
     return temp;
   };
