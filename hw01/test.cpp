@@ -45,7 +45,7 @@ struct bitArray
   
   bool operator==( const bitArray &other ) const
   {
-    return bits == other.bits && length == other.length;
+    return !( *this > other ) && !( *this < other );
   };
 
   bool operator!=( const bitArray &other ) const
@@ -60,24 +60,20 @@ struct bitArray
 
   bitArray getFirst( uint8_t count ) const
   {
-    bitArray res = *this;
+    bitArray res( *this );
     res.bits >>= res.length - count;
     res.length = count;
     return res;
   };
 
-  void operator+=( const bitArray &other )
+  bitArray &operator+=( const bitArray &other )
   {
-    bits <<= other.length;
-    bits |= other.bits & ones(other.length);
-    length += other.length;
+    return *this = *this + other;
   };
 
-  void operator+=( const uint8_t other )
+  bitArray &operator+=( const uint8_t other )
   {
-    bits <<= 8;
-    bits |= other;
-    length += 8;
+    return *this = *this + bitArray( other, 8 );
   };
 
   bitArray operator+( const bitArray &other ) const
@@ -92,7 +88,12 @@ struct bitArray
   // needed for usage as key in map
   bool operator<( const bitArray &other ) const
   {
-    return bits < other.bits || ( bits == other.bits && length < other.length );
+    return bits == other.bits ? length < other.length : bits < other.bits;
+  };
+
+  bool operator>( const bitArray &other ) const
+  {
+    return other < *this;
   };
 
   operator bool() const
@@ -108,7 +109,7 @@ struct bitArray
     for( int8_t shift = length - 8; shift >= 0; shift -= 8 )
     {
       const uint8_t temp = bits >> shift;
-      stream.write( (const char *)&temp, 1 );
+      stream.put( temp );
     }
   };
 };
@@ -209,8 +210,7 @@ private:
   {
     while( bufferLen + 8 <= BUFFER_SIZE )
     {
-      uint8_t newByte;
-      stream.read( (char *)&newByte, 1 );
+      uint8_t newByte = stream.get();
       if( !stream.good() ) return;
       buffer <<= 8;
       buffer |= newByte;
@@ -227,7 +227,7 @@ private:
     bufferLen -= 8;
     buffer &= ones( bufferLen );
     temp >>= bufferLen;
-    stream.write( (char *)&temp, 1 );
+    stream.put( temp );
   };
 
   // bufferLen = 7 means: buffer = b'... XXXX XXXX X100 1010'
@@ -532,8 +532,7 @@ private:
    */
   static bitArray getUtf8( ifstream &input )
   {
-    uint32_t first = 0;
-    input.read( (char *)&first, 1 );
+    uint32_t first = input.get();
     if( !input.good() )
       return bitArray( !input.bad(), 0 );
 
@@ -545,8 +544,7 @@ private:
 
     for( uint8_t byte = 1; byte < byteCount; ++byte )
     {
-      uint8_t trail;
-      input.read( (char *)&trail, 1 );
+      uint8_t trail = input.get();
       if( !input.good() ) return bitArray();
       if( ( trail & ( 0b11 << 6 ) ) != ( 1 << 7 ) ) return bitArray();
       utf8 += trail;
