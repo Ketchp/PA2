@@ -38,11 +38,11 @@ struct bitArray
   bitArray()
     : bits( 0 ), length( 0 )
   {};
-  
+
   bitArray( uint32_t value, uint8_t length )
     : bits( value & ( ones( length ) | 1 ) ), length( length )
   {};
-  
+
   bool operator==( const bitArray &other ) const
   {
     return !( *this > other ) && !( *this < other );
@@ -58,7 +58,7 @@ struct bitArray
     return bits & other;
   };
 
-  bitArray getFirst( uint8_t count ) const
+  bitArray peekFirst( uint8_t count ) const
   {
     bitArray res( *this );
     res.bits >>= res.length - count;
@@ -101,6 +101,24 @@ struct bitArray
     return length;
   };
 
+  // more operator could be easily implemented which would make sense |,&=,|=,~, maybe []
+  // ...but I only needed those up there and > is already overdo
+
+  void pushBit( const uint8_t val )
+  {
+    length += 1;
+    bits <<= 1;
+    bits |= val == 1;
+  }
+
+  uint8_t popBit()
+  {
+    length -= 1;
+    uint8_t bit = bits & 1;
+    bits >>= 1;
+    return bit;
+  }
+
   /**
    * @brief Prints contents to stream
    */
@@ -127,7 +145,7 @@ public:
 
   /**
    * @brief Pops length of bits from stream
-   * 
+   *
    * @param length number of bits
    */
   bitArray get( const uint8_t length )
@@ -165,7 +183,7 @@ public:
 
   /**
    * @brief Extracts UTF-8 byte representation of character to target
-   * 
+   *
    * @return true on success
    * @return false bad UTF-8 format in stream
    */
@@ -174,7 +192,7 @@ public:
     bitArray first = get( 8 );
     if( !first ) return false;
 
-    // 0b<3 zero bytes> 1110 XXXX ---> ( << 24 ) 
+    // 0b<3 zero bytes> 1110 XXXX ---> ( << 24 )
     // 0b1110 XXXX <3 zero bytes> ---> ~
     // 0b0001 XXXX <3 ones bytes> ---> clz: number of leading zeros
     uint8_t byteCount = __builtin_clz( ~( first.bits << 24 ) );
@@ -185,7 +203,7 @@ public:
     for( uint8_t byte = 1; byte < byteCount; ++byte )
     {
       bitArray intermediate = get( 8 );
-      if( intermediate.getFirst( 2 ) != bitArray( 0b10, 2 ) )
+      if( intermediate.peekFirst( 2 ) != bitArray( 0b10, 2 ) )
         return false;
       first += intermediate;
     }
@@ -201,7 +219,7 @@ public:
     target = first;
     return true;
   };
-  
+
 private:
   /**
    * @brief Fills internal buffer from underlying stream as much as possible
@@ -237,14 +255,14 @@ private:
 };
 
 
-class huffmanCode
+class smallHuffmanCode
 {
 public:
-  huffmanCode()
+  smallHuffmanCode()
     :top( nullptr )
   {};
 
-  ~huffmanCode()
+  ~smallHuffmanCode()
   {
     if( top ) top->deleteNode();
   };
@@ -255,7 +273,7 @@ public:
     if( !inFile.good() ) return false;
 
     ofstream output( outFileName, fstream::binary | fstream::trunc );
-    if( !output.good() ) return false; 
+    if( !output.good() ) return false;
 
     bitStream input( inFile );
 
@@ -277,7 +295,7 @@ public:
     if( !createTreeFrom( inFile ) ) return false;
 
     fstream outFile( outFileName, fstream::out | fstream::binary | fstream::trunc );
-    if( !outFile.good() ) return false; 
+    if( !outFile.good() ) return false;
 
     bitStream output( outFile );
 
@@ -301,30 +319,29 @@ private:
    */
   struct node
   {
-    node *parent;
     node *left;
     node *right;
     bitArray utf8;
 
     node()
-      : parent( nullptr), left( nullptr ), right( nullptr )
+      : left( nullptr ), right( nullptr )
     {};
 
     // leaf node constructor
     node( const bitArray &utf8 )
-      : parent( nullptr), left( nullptr ), right( nullptr ), utf8( utf8 )
+      : left( nullptr ), right( nullptr ), utf8( utf8 )
     {};
 
     // parent node constructor
     node( node *left, node *right )
-      : parent( nullptr ), left( left ), right ( right )
+      : left( left ), right ( right )
     {};
 
     /**
      * @brief Creates subtree from this node
-     * 
+     *
      * @return true on success
-     * @return false on corrupted UTF-8 characted / EOF / io-error 
+     * @return false on corrupted UTF-8 characted / EOF / io-error
      */
     bool appendNode( bitStream &input )
     {
@@ -353,41 +370,15 @@ private:
     /**
      * @brief Prints huffman tree to compressed file
      */
-    void printTree( bitStream &output ) const
-    {
-      if( left && right )
-      {
-        output.write( bitArray( 0, 1 ) );
-        left->printTree( output );
-        right->printTree( output );
-        return;
-      }
-      output.write( bitArray( 1, 1 ) );
-      output.write( utf8 );
-    };
-
-    /**
-     * @brief Prints huffman code of current node
-     * Works by recursively calls parent to top and writes to output while returning
-     */
-    void printCode( bitStream &output ) const
-    {
-      if( parent )
-      {
-        parent->printCode( output );
-        if( parent->left == this ) output.write( bitArray( 0, 1 ) );
-        if( parent->right == this ) output.write( bitArray( 1, 1) );
-      }
-    };
   };
 
 /* VVV DECOMPRESSION PRIVATE METHODS VVV */
 
   /**
    * @brief Loads huffman tree from file
-   * 
+   *
    * @return true on success
-   * @return false on corrupted UTF-8 characted / EOF / io-error 
+   * @return false on corrupted UTF-8 characted / EOF / io-error
    */
   bool loadTree( bitStream &input )
   {
@@ -423,7 +414,7 @@ private:
 
   /**
    * @brief Reads huffman code from input and prints decoded data to output
-   * 
+   *
    * @param chunkSize count of UTF-8 chracters needed at output
    * @return true on succes
    * @return false EOF, io-error occured before chuckSize characters could be read
@@ -452,7 +443,7 @@ private:
 
   /**
    * @brief Create a huffman tree/code to compress input
-   * 
+   *
    * @return true on success
    * @return false on bad UTF-8 coding or IO-error
    */
@@ -470,7 +461,6 @@ private:
     {
       node *leaf = new node( letter.first );
       charArray.push_back( pair<node *, uint64_t>( leaf, letter.second ) );
-      lookUpTable[ letter.first ] = leaf;
     }
 
     sort( charArray.begin(), charArray.end(),
@@ -505,8 +495,32 @@ private:
   };
 
   /**
+   * @brief Print huffman code for sub-tree of current node
+   *
+   * @param current root of tree
+   * @param code huffman code for root
+   */
+  void printTree( const node *current, bitArray &code, bitStream &output )
+  {
+    if( current->left && current->right )
+    {
+      output.write( bitArray( 0, 1 ) );
+      code.pushBit( 0 );
+      printTree( current->left, code, output );
+      code.bits |= 1;
+      printTree( current->right, code, output );
+      code.popBit();
+      return;
+    }
+    output.write( bitArray( 1, 1 ) );
+    output.write( current->utf8 );
+    lookUpTable[ current->utf8 ] = code;
+  };
+
+
+  /**
    * @brief Stores UTF-8 character frequencies to charFreq
-   * 
+   *
    * @param charFreq map for storing <UTF-8, count> pairs
    * @return true on success
    * @return false on bad UTF-8 coding or IO-error
@@ -586,46 +600,45 @@ private:
     queue_b.pop();
     return temp;
   };
-  
+
   /**
    * @brief compair occurence of < node, int > pair
-   * 
+   *
    * @return 1 if a > b, -1 if a < b, 0 otherwise
    */
   inline static int8_t compPair( const pair<node *, uint64_t> &a,
                                  const pair<node *, uint64_t> &b )
   {
-    return ( a.second > b.second ) - ( b.second > a.second );
+    return ( a.second > b.second ) - ( a.second < b.second );
   };
 
   /**
    * @brief Create pair < parent node, combined occurence >
-   * 
+   *
    * @param a < child node, occurence >
    * @param b < child node, occurence >
-   * @return pair<node *, uint64_t> 
+   * @return pair<node *, uint64_t>
    */
   static pair<node *, uint64_t> merge( pair<node *, uint64_t> a,
                                        pair<node *, uint64_t> b )
   {
-    pair<node *, uint64_t> temp( new node( a.first, b.first ), a.second + b.second );
-    a.first->parent = temp.first;
-    b.first->parent = temp.first;
-    return temp;
+    return pair<node *, uint64_t>( new node( a.first, b.first ), a.second + b.second );
   };
 
   /**
-   * @brief prints Huffman tree mapping UTF-8 <-> huffman code
+   * @brief prints Huffman tree mapping UTF-8 <-> huffman code to compressed file
+   * also updates lookUpTable to reflect currently printed tree
    */
-  void printHuffCode( bitStream &output ) const
+  void printHuffCode( bitStream &output )
   {
     if( !top ) return;
-    top->printTree( output );
+    bitArray code;
+    printTree( top, code, output );
   };
 
   /**
    * @brief compresses up to 4096 UTF-8 characters
-   * 
+   *
    * @return true if there is still more data in inFile
    * @return false on EOF
    */
@@ -662,7 +675,7 @@ private:
   {
     for( const bitArray &symbol: data )
     {
-      lookUpTable.at( symbol )->printCode( output );
+      output.write( lookUpTable.at( symbol ) );
     }
   };
 
@@ -674,29 +687,29 @@ private:
 
   /**
    * @brief UTF-8  --->  huffman code
-   * table stores ptr only to leaf that stores utf8 bytes as opposed to
-   * pointing directly to bitArray which could be directly printed
-   * this is because bitArray is limited to length of 32 bits whereas
-   * huffman tree can be highly unbalanced
+   * bitArray is limited to length of 32 bits
+   * also huffman tree can be highly unbalanced
    * for example occurances { 1, 2, 4, 8, ... 2^n } of characters
    * produces tree with depth n-1, which means that it would be needed
    * n-2 bits to represent all codes.
    * For n = 35 codes wouldn't fit to bitArray, this could happen for file with size ~68.7GB
+   * For alternative implementation which uses recursion to avoid this problem
+   * see commit 95b12455:"hw01: bitArray simplified/ read ->get, write->put... faster t<1.1s"
+   * in which slower recursion version was last used( 1.5s --> 1.0s for all tests compresion/decompresion )
    */
-  map< bitArray, node * > lookUpTable;
-
+  map< bitArray, bitArray > lookUpTable;
 };
 
 
 bool decompressFile ( const char * inFileName, const char * outFileName )
 {
-  huffmanCode huff;
+  smallHuffmanCode huff;
   return huff.decompress( inFileName, outFileName );
 }
 
 bool compressFile ( const char * inFileName, const char * outFileName )
 {
-  huffmanCode huff;
+  smallHuffmanCode huff;
   return huff.compress( inFileName, outFileName );
 }
 
