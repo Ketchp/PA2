@@ -160,6 +160,12 @@ private:
       : left( nullptr ), right( nullptr ), key( key ), value( value ), height( 1 )
     {};
 
+    ~node()
+    {
+      delete left;
+      delete right;
+    };
+
     node &operator=( node &&other )
     {
       left = other.left;
@@ -167,14 +173,23 @@ private:
       key = move( other.key );
       value = move( other.value );
       height = other.height;
+      other.left = other.right = nullptr;
       return *this;
     };
 
-    ~node()
+    node &steal( node &victim )
     {
-      delete left;
-      delete right;
-    };
+      key = move( victim.key );
+      value = move( victim.value );
+      return *this;
+    }
+
+    node &copyKeyValue( node &other )
+    {
+      key = other.key;
+      value = other.value;
+      return *this;
+    }
 
     void updateHeight()
     {
@@ -306,25 +321,26 @@ private:
       top->left = deleteNode( top->left, key );
     else
     {
+      --m_size;
       if( !top->left || !top->right )
       {
         node *ancestor = top->left ? top->left : top-> right;
         if( !ancestor )
         {
           delete top;
-          top = nullptr;
+          return nullptr;
         }
-        else
-          *top = move( *ancestor );
+        *top = move( *ancestor );
         delete ancestor;
-        --m_size;
       }
       else
       {
         node *smallest = top->right;
         while( smallest->left )
           smallest = smallest->left;
-        top = smallest;
+
+        top->copyKeyValue( *smallest );
+
         top->right = deleteNode( top->right, smallest->key );
       }
     }

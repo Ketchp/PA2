@@ -29,27 +29,63 @@ struct triple
     }
     return (itL != lhs.cend()) - (itR != rhs.cend());
   };
+  friend bool operator==( const triple &lhs, const triple &rhs )
+  {
+    return !( lhs < rhs ) && !( rhs < lhs );
+  };
 };
 
-void testOrder( CVATRegister db, vector<triple> &companies )
+void testOrder( vector<triple> &companies,
+                vector<int> insertOrder,
+                vector<int> deleteOrder )
 {
-  sort( companies.begin(), companies.end() );
+  CVATRegister db;
+
+  vector<triple> stored;
+
   string name, addr;
-
-  if( companies.size() )
-    assert( db.firstCompany( name, addr ) &&
-            name == companies[0].first &&
-            addr == companies[0].second );
-  else
-    assert( !db.firstCompany( name, addr ) );
-
-  for( auto it = companies.cbegin() + 1; it != companies.cend(); ++it )
+  for( const int idx : insertOrder )
   {
-    assert( db.nextCompany( name, addr ) &&
-            name == it->first &&
-            addr == it->second );
+    const triple &comp = companies[ idx ];
+    db.newCompany( comp.first, comp.second, comp.third );
+    stored.push_back( comp );
   }
-  assert( !db.nextCompany( name, addr ) );
+
+
+  for( const int idx : deleteOrder )
+  {
+    const triple &comp = companies[ idx ];
+    if( find( stored.cbegin(), stored.cend(), comp ) == stored.cend() )
+    {
+      assert( !db.cancelCompany( comp.first, comp.second ) );
+      assert( !db.cancelCompany( comp.third ) );
+    }
+    else
+    {
+      assert(  db.cancelCompany( comp.first, comp.second ) );
+      assert( !db.cancelCompany( comp.third ) );
+      stored.erase( remove( stored.begin(), stored.end(), comp ), stored.end() );
+    }
+
+    sort( stored.begin(), stored.end() );
+
+    if( stored.size() )
+      assert( db.firstCompany( name, addr ) &&
+              name == stored[0].first &&
+              addr == stored[0].second );
+    else
+      assert( !db.firstCompany( name, addr ) );
+
+    for( auto it = stored.cbegin() + 1; it < stored.cend(); ++it )
+    {
+      assert( db.nextCompany( name, addr ) &&
+              name == it->first &&
+              addr == it->second );
+    }
+    assert( !db.nextCompany( name, addr ) );
+
+  }
+
 }
 
 void testHeap()
@@ -195,12 +231,7 @@ int main( void )
     {"r","a","82"}
   };
   
-  for( const auto &triple : companies )
-  {
-    db.newCompany( triple.first, triple.second, triple.third );
-  }
-
-  testOrder( db, companies );
+  testOrder( companies, {5,6,7,9,2}, {5,6,7,9,2} );
 
   return EXIT_SUCCESS;
 }
