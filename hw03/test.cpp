@@ -1,5 +1,8 @@
 #include "test.hpp"
 
+static size_t strlen( const char *str );
+static int toInt( const char *str );
+
 const int CDate::monthLengths[] =
 {
   0,
@@ -40,15 +43,66 @@ InvalidDateException::InvalidDateException ( )
   : invalid_argument ( "invalid date or format" )
 {}
 
-//=================================================================================================
-// date_format manipulator - a dummy implementation. Keep this code unless you implement your
-// own working manipulator.
-ios_base & ( * date_format ( const char * fmt ) ) ( ios_base & x )
+_dateFormat::_dateFormat( const char *format )
+  : _format( format )
+{}
+
+void _dateFormat::event_callback( ios_base::event type, ios_base& ios, int index )
 {
-  return [] ( ios_base & ios ) -> ios_base & { return ios; };
+  void * &state_ptr = ios.pword( index );
+  if( type == ios_base::event::erase_event )
+  {
+    delete (string *)state_ptr;
+  }
+  else if( type == ios_base::event::copyfmt_event )
+  {
+    state_ptr = ( void * ) new string( *(string *)state_ptr );
+  }
+}
+
+ostream &operator<<( ostream &os, _dateFormat &&f_obj )
+{
+  void * &state_ptr = os.pword( CDate::base_ios_index );
+
+  if( state_ptr )
+    // delete old format
+    delete (string *)state_ptr;
+  else
+    os.register_callback( &_dateFormat::event_callback, CDate::base_ios_index );
+
+  // move format from temporary object
+  state_ptr = (void *) new string( f_obj._format ); // TODO ask cviciaci
+  
+  return os; 
+}
+
+istream &operator>>( istream &is, _dateFormat &&f_obj )
+{
+  void * &state_ptr = is.pword( CDate::base_ios_index );
+  
+  if( state_ptr )
+    // delete old format
+    delete (string *)state_ptr;
+  else
+    is.register_callback( &_dateFormat::event_callback, CDate::base_ios_index );
+
+  // move format from temporary object
+  state_ptr = (void *) new string( f_obj._format ); // TODO ask cviciaci
+  
+  return is;
 }
 
 //=================================================================================================
+// date_format manipulator - a dummy implementation. Keep this code unless you implement your
+// own working manipulator.
+_dateFormat date_format( const char * fmt )
+{
+  return _dateFormat( fmt );
+}
+
+//=================================================================================================
+const int CDate::base_ios_index = ios_base::xalloc();
+
 CDate::CDate()
   : days( 0 )
 {}
@@ -156,51 +210,127 @@ bool operator!=( const CDate &lhs, const CDate &rhs )
 
 ostream &operator<<( ostream &os, const CDate &timeOut )
 {
+  void * &state_ptr = os.pword( CDate::base_ios_index );
+  const string &format = state_ptr ? *(string *)state_ptr : "%Y-%m-%d";
+
   ostream::char_type fillChar = os.fill();
   ostream::fmtflags initial = os.flags();
-  os << setfill( '0' ) << right
-     << setw( 4 ) << timeOut.getYear() << '-'
-     << setw( 2 ) << timeOut.getMonth() << '-'
-     << setw( 2 ) << timeOut.getDay()
-     << setfill( fillChar );
+
+  os << setfill( '0' ) << right;
+  auto it = format.cbegin();
+  while( it != format.cend() )
+  {
+    if( *it != '%' )
+    {
+      os.put( *it );
+      ++it;
+      continue;
+    }
+    ++it;
+    if( it == format.cend() )
+    {
+      os.setstate( ios_base::failbit );
+      break;
+    }
+    if( *it == 'Y' )
+      os << setw( 4 ) << timeOut.getYear();
+    else if( *it == 'm' )
+      os << setw( 2 ) << timeOut.getMonth();
+    else if( *it == 'd' )
+      os << setw( 2 ) << timeOut.getDay();
+    else
+      os.put( *it );
+
+    ++it;
+  }
+  os.fill( fillChar );
   os.flags( initial );
   return os;
 }
 
 istream &operator>>( istream &is, CDate &timeIn )
 {
-  int year, month, day;
-  char tempChar;
-  is >> year >> tempChar;
-  if( tempChar != '-' )
-  {
-    is.setstate( ios::failbit );
-    return is;
-  }
-  is >> month >> tempChar;
-  if( tempChar != '-' )
-  {
-    is.setstate( ios::failbit );
-    return is;
-  }
-  is >> day;
+  void * &state_ptr = is.pword( CDate::base_ios_index );
+  const string &format = state_ptr ? *(string *)state_ptr : "%Y-%m-%d";
 
-  if( !is )
+  int year = 0, month = 0, day = 0;
+  char tempChar;
+  char buffer[ 5 ];
+
+  auto it = format.cbegin();
+  while( it != format.cend() )
   {
-    is.setstate( ios::failbit );
+    if( *it != '%' )
+    {
+      is.get( tempChar );
+      if( tempChar != *it )
+      {
+        year = 0;
+        break;
+      }
+      ++it;
+      continue;
+    }
+    ++it;
+    if( it == format.cend() )
+    {
+      year = 0;
+      break;
+    }
+    if( *it == 'Y' )
+    {
+      is.get( buffer, 5 );
+      if( strlen( buffer ) != 4 || year )
+      {
+        year = 0;
+        break;
+      }
+      if( !( year = toInt( buffer ) ) ) break;
+    }
+    else if( *it == 'm' )
+    {
+      is.get( buffer, 3 );
+      if( strlen( buffer ) != 2 || month )
+      {
+        month = 0;
+        break;
+      }
+      if( !( month = toInt( buffer ) ) ) break;
+    }
+    else if( *it == 'd' )
+    {
+      is.get( buffer, 3 );
+      if( strlen( buffer ) != 2 || day )
+      {
+        day = 0;
+        break;
+      }
+      if( !( day = toInt( buffer ) ) ) break;
+    }
+    else if ( !is.get( tempChar ) || tempChar != *it )
+    {
+      year = 0;
+      break;
+    }
+    ++it;
+  }
+
+  if( !day || !month || !year )
+  {
+    is.setstate( ios_base::failbit );
     return is;
   }
 
   try
   {
-    CDate output( year, month, day );
-    timeIn = output;
+    timeIn = CDate( year, month, day );
+    return is;
   }
-  catch( const InvalidDateException & )
+  catch( const InvalidDateException &e )
   {
-    is.setstate( ios::failbit );
+    is.setstate( ios_base::failbit );
+    return is;
   }
-  return is;
 }
 
 int CDate::getYear() const
@@ -252,4 +382,24 @@ bool CDate::isLeapYear( const int year )
 int CDate::leapYearCount( int year )
 {
   return ( year - 1 ) / 4;
+}
+
+static size_t strlen( const char *str )
+{
+  size_t size = 0;
+  while( *str++ )
+    ++size;
+  return size;
+}
+
+static int toInt( const char *str )
+{
+  int num = 0;
+  while( *str )
+  {
+    if( *str < '0' || '9' < *str ) return 0;
+    num = 10 * num + ( *str - '0' );
+    str++;
+  }
+  return num;
 }

@@ -21,10 +21,21 @@ public:
   InvalidDateException();
 };
 
+class _dateFormat
+{
+  string _format;
+  static void event_callback( ios_base::event type, ios_base& ios, int index );
+public:
+  _dateFormat( const char *format );
+  friend ostream &operator<<( ostream &os, _dateFormat &&f_obj );
+  friend istream &operator>>( istream &is, _dateFormat &&f_obj );
+};
+
 //=================================================================================================
 // date_format manipulator - a dummy implementation. Keep this code unless you implement your
 // own working manipulator.
-ios_base & ( * date_format ( const char * fmt ) ) ( ios_base & x );
+//ios_base & ( * date_format ( const char * fmt ) ) ( ios_base & x );
+_dateFormat date_format( const char * fmt );
 
 //=================================================================================================
 class CDate
@@ -55,6 +66,8 @@ public:
   int getYear() const;
   int getMonth() const;
   int getDay() const;
+  friend ostream &operator<<( ostream &os, _dateFormat &&f_obj );
+  friend istream &operator>>( istream &is, _dateFormat &&f_obj );
 
 private:
   int days;
@@ -62,4 +75,5 @@ private:
   const static int daysTillMonth[];
   static bool isLeapYear( const int year );
   static int leapYearCount( int year );
+  static const int base_ios_index;
 };
