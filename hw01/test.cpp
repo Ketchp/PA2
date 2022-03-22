@@ -1,3 +1,8 @@
+/*
+ *  Program for compressing and decompressing files
+ *  using huffman coding.
+ */
+
 #ifndef __PROGTEST__
 #include <cstring>
 #include <cstdlib>
@@ -21,43 +26,74 @@
 using namespace std;
 #endif /* __PROGTEST__ */
 
-// mask of ones with length n
+/// bitmask with n least significant set bits
 constexpr uint64_t ones( const uint8_t n )
 {
   return ( 1ull << n ) - 1;
 }
 
-// struct for storing bit array of variable size ( max 32bit )
-// ( 0, 0 ) reserved to signal invalid value
-// ( 1, 0 ) reserved to signal EOF
+/** \struct bitArray
+ *  \brief Structure for storing bit array of variable size.
+ *         Maximum array length is 32 bits.
+ *         { bits, length }
+ * 
+ *  \remark ( 0, 0 ) reserved to signal invalid value.( Empty bitArray )
+ *  \remark ( 1, 0 ) reserved to signal EOF.
+ *  \remark internall bit field representation is alligned to LSB.
+ *  \remark Members are publicly available for easier manipulation.
+ * 
+ *  \warning If most significant set bit of bits is higer than length,
+ *           all operations have undefined behaviour( this includes EOF state )
+ *           This undefined state can be easily achieved by directly modifying members.
+ */
 struct bitArray
 {
   uint32_t bits;
   uint8_t length;
 
+  /**
+   * @brief Invalid value constructor
+   */
   bitArray()
     : bits( 0 ), length( 0 )
   {};
 
+  /**
+   * @brief { value, length } constructor
+   * @remark value set bits is cleared higher than length are cleared 
+   */
   bitArray( uint32_t value, uint8_t length )
     : bits( value & ( ones( length ) | 1 ) ), length( length )
   {};
 
-  bool operator==( const bitArray &other ) const
+  /**
+   * @remark equivalent to !( lhs > rhs ) && !( lhs < rhs )
+   */
+  friend bool operator==( const bitArray &lhs, const bitArray &rhs )
   {
-    return !( *this > other ) && !( *this < other );
+    return !( lhs > rhs ) && !( lhs < rhs );
   };
 
-  bool operator!=( const bitArray &other ) const
+  /**
+   * @remark equivalent to !( lhs == rhs )
+   */
+  friend bool operator!=( const bitArray &lhs, const bitArray &rhs )
   {
-    return !( *this == other );
+    return !( lhs == rhs );
   };
 
-  uint32_t operator&( uint32_t other ) const
+  /**
+   * @return uint32_t bits alligned to LSB
+   */
+  friend uint32_t operator&( const bitArray &lhs, uint32_t rhs )
   {
-    return bits & other;
+    return lhs.bits & rhs;
   };
-
+  
+  /**
+   * @param count of bits ( length )
+   * @return bitArray of first count MSB
+   */
   bitArray peekFirst( uint8_t count ) const
   {
     bitArray res( *this );
@@ -66,36 +102,57 @@ struct bitArray
     return res;
   };
 
+  /**
+   * @brief Append/Concatenates other bitArray
+   */
   bitArray &operator+=( const bitArray &other )
   {
     return *this = *this + other;
   };
 
+  /**
+   * @brief Append/Concatenates 8 bits
+   */
   bitArray &operator+=( const uint8_t other )
   {
     return *this = *this + bitArray( other, 8 );
   };
 
-  bitArray operator+( const bitArray &other ) const
+  /**
+   * @brief Concatenates bitArrays
+   */
+  friend bitArray operator+( const bitArray &lhs, const bitArray &rhs )
   {
-    bitArray res( *this );
-    res.bits <<= other.length;
-    res.bits |= other.bits & ones(other.length);
-    res.length += other.length;
+    bitArray res( lhs );
+    res.bits <<= rhs.length;
+    res.bits |= rhs.bits & ones( rhs.length );
+    res.length += rhs.length;
     return res;
   };
 
-  // needed for usage as key in map
-  bool operator<( const bitArray &other ) const
+  /**
+   * @brief Unspecified asymetric transitive relation
+   * 
+   * @remark Oparation introduced for use in algorithms / data structures which needs
+   * sorting / comparision operator.
+   */
+  friend bool operator<( const bitArray &lhs, const bitArray &rhs )
   {
-    return bits == other.bits ? length < other.length : bits < other.bits;
+    return lhs.bits == rhs.bits ? lhs.length < rhs.length : lhs.bits < rhs.bits;
   };
 
-  bool operator>( const bitArray &other ) const
+  /**
+   * @brief Unspecified asymetric transitive relation
+   */
+  friend bool operator>( const bitArray &lhs, const bitArray &rhs )
   {
-    return other < *this;
+    return rhs < lhs;
   };
 
+  /**
+   * @return true for valid bitArrays
+   * @return false for empty bitArray / EOF
+   */
   operator bool() const
   {
     return length;
@@ -104,6 +161,11 @@ struct bitArray
   // more operator could be easily implemented which would make sense |,&=,|=,~, maybe []
   // ...but I only needed those up there and > is already overdo
 
+  /**
+   * @brief Appends bit to bitArray
+   * 
+   * @param val bit ( 0b0 / 0b1 )
+   */
   void pushBit( const uint8_t val )
   {
     length += 1;
@@ -111,6 +173,11 @@ struct bitArray
     bits |= val == 1;
   }
 
+  /**
+   * @brief Pop first bit / MSB
+   * 
+   * @return uint8_t bit ( 0b0 / 0b1 )
+   */
   uint8_t popBit()
   {
     length -= 1;
@@ -120,7 +187,9 @@ struct bitArray
   }
 
   /**
-   * @brief Prints contents to stream
+   * @brief Prints as many whole bytes as possible to stream
+   * 
+   * @remark Aligned to most significant bit, as many as 7 bits can be missed
    */
   void print( ofstream &stream ) const
   {
@@ -133,18 +202,21 @@ struct bitArray
 };
 
 /**
- * @brief class for I/O operations with individual bits
+ * @class bitStream
+ * 
+ * @brief class for I/O operations with individual bits on stream
  */
 class bitStream
 {
 public:
-  const static uint8_t BUFFER_SIZE = 64;
   bitStream( fstream &stream )
     : buffer( 0 ), bufferLen( 0 ), stream( stream )
   {};
 
   /**
    * @brief Pops length of bits from stream
+   *
+   * @remark during reading, the buffer stays full as much as possible
    *
    * @param length number of bits
    */
@@ -155,12 +227,14 @@ public:
     uint64_t temp = buffer;
     temp >>= bufferLen - length;
     bufferLen -= length;
-    buffer &= ones( bufferLen );    // discard front bits that have been read
+    buffer &= ones( bufferLen );    // discard most significant bits that have been read
     return bitArray( temp, length );
   };
 
   /**
    * @brief Write bits to stream
+   *
+   * @remark during writing, the buffer stays empty as much as possible
    */
   void write( const bitArray &data )
   {
@@ -172,6 +246,10 @@ public:
 
   /**
    * @brief Padds bits in buffer with zeros to multiple of byte
+   * 
+   * @remark Used to force buffer to get written to underlying stream
+   * 
+   * @warning Does not call flush() on underlying stream
    */
   void flush()
   {
@@ -183,29 +261,39 @@ public:
 
   /**
    * @brief Extracts UTF-8 byte representation of character to target
-   *
+   * 
    * @return true on success
-   * @return false bad UTF-8 format in stream
+   * @return false on invalid UTF-8 format in stream
+   *
+   * @remark Invalid UTF-8 format can result from:
+   * - lack of bits( EOF )
+   * - first byte being continuation byte
+   * - lack of continuation bytes
+   * - underlying UNICODE represented by UTF-8 out of range
+   * 
+   * @remark function check for correctness of represented UNICODE but result is still UTF-8
+   * 
+   * @sa getUtf8( ifstream &input )
    */
   bool getUtf8( bitArray &target )
   {
-    bitArray first = get( 8 );
-    if( !first ) return false;
+    bitArray leading = get( 8 );
+    if( !leading ) return false;
 
     // 0b<3 zero bytes> 1110 XXXX ---> ( << 24 )
     // 0b1110 XXXX <3 zero bytes> ---> ~
     // 0b0001 XXXX <3 ones bytes> ---> clz: number of leading zeros
-    uint8_t byteCount = __builtin_clz( ~( first.bits << 24 ) );
+    uint8_t byteCount = __builtin_clz( ~( leading.bits << 24 ) );
 
-    // 1 means first == 10XX XXXX (intermediate byte as first byte)
+    // 1 means first == 10XX XXXX (continuation byte as first byte)
     if( byteCount == 1 || byteCount > 4 ) return false;
 
     for( uint8_t byte = 1; byte < byteCount; ++byte )
     {
-      bitArray intermediate = get( 8 );
-      if( intermediate.peekFirst( 2 ) != bitArray( 0b10, 2 ) )
+      bitArray continuation = get( 8 );
+      if( continuation.peekFirst( 2 ) != bitArray( 0b10, 2 ) )
         return false;
-      first += intermediate;
+      leading += continuation;
     }
 
     /* 0xf4908080 ==
@@ -213,10 +301,10 @@ public:
      *    1001 0000
      *    1000 0000
      *    1000 0000 ==
-     * max UTF-8 value
+     * max UTF-8 value + 1
      */
-    if( first.bits >= 0xf4908080ul ) return bitArray();
-    target = first;
+    if( leading.bits >= 0xf4908080ul ) return bitArray();
+    target = leading;
     return true;
   };
 
@@ -238,6 +326,8 @@ private:
 
   /**
    * @brief Writes byte to underlying stream
+   * 
+   * @remark Byte is smallest supported fstream type
    */
   void writeByte()
   {
@@ -248,13 +338,24 @@ private:
     stream.put( temp );
   };
 
+  const static uint8_t BUFFER_SIZE = 64;
+
   // bufferLen = 7 means: buffer = b'... XXXX XXXX X100 1010'
   uint64_t buffer;
-  uint8_t bufferLen; //size in bits
+  uint8_t bufferLen; // buffer size in bits
   fstream &stream;
 };
 
-
+/**
+ * @class smallHuffmanCode
+ * 
+ * @brief Class for compression and decompresion of files
+ *        using Huffman (en)coding.
+ * 
+ * @remark Possible undefined behaviour on files larger than 68.7GB.
+ * @sa smallHuffmanCode::lookUpTable
+ * 
+ */
 class smallHuffmanCode
 {
 public:
@@ -267,6 +368,12 @@ public:
     if( top ) top->deleteNode();
   };
 
+  /**
+   * @brief Function for decompressing file
+   * 
+   * @return true on successful decompresion
+   * @return false on corrupted / unreadable file
+   */
   bool decompress( const char *inFileName, const char *outFileName )
   {
     fstream inFile( inFileName, ifstream::in | ifstream::binary );
@@ -287,6 +394,12 @@ public:
     return true;
   };
 
+  /**
+   * @brief Function for compressing file
+   * 
+   * @return true on successful compresion
+   * @return false on corrupted / unreadable file
+   */
   bool compress( const char *inFileName, const char *outFileName )
   {
     ifstream inFile( inFileName, ifstream::binary );
@@ -311,11 +424,15 @@ public:
 
 private:
   /**
-   * @brief structure for nodes of huffman tree
-   * 0: left
-   * 1: right
-   * left == right == nullptr means that node is leaf and utf8 stores
-   * valid utf8 bytes for series of bits from top to current node
+   * @struct node
+   * @brief structure for representing huffman tree
+   * 
+   * @remark 0: left
+   *         1: right
+   * 
+   * @remark left == right == nullptr means that node is leaf and utf8 stores
+   *         valid utf8 bytes for series of bits from top to current node
+   *         otherwise utf8 should be empty as Huffman code is prefix-free code
    */
   struct node
   {
@@ -378,7 +495,7 @@ private:
    * @brief Loads huffman tree from file
    *
    * @return true on success
-   * @return false on corrupted UTF-8 characted / EOF / io-error
+   * @return false on corrupted UTF-8 character / EOF / IO-error
    */
   bool loadTree( bitStream &input )
   {
@@ -417,7 +534,7 @@ private:
    *
    * @param chunkSize count of UTF-8 chracters needed at output
    * @return true on succes
-   * @return false EOF, io-error occured before chuckSize characters could be read
+   * @return false EOF, IO-error occured before chuckSize characters could be read
    */
   bool readChunk( bitStream &input, ofstream &output, uint16_t chunkSize = 4096 ) const
   {
@@ -541,8 +658,21 @@ private:
   };
 
   /**
-   * @brief Get the Utf8 bytes from input
-   * Warning: function gets UTF-8 representation not unicode since that is almost not needed
+   * @brief Extracts UTF-8 byte representation of character to target
+   * 
+   * @return true on success
+   * @return false on invalid UTF-8 format in stream
+   *
+   * @remark Invalid UTF-8 format can result from:
+   * - lack of bits( EOF )
+   * - first byte being continuation byte
+   * - lack of continuation bytes
+   * - underlying UNICODE represented by UTF-8 out of range
+   * 
+   * @remark function check for correctness of represented UNICODE but result is still UTF-8
+   * 
+   * @remark Function is duplicated because we need reading from both stream and bitStream
+   * @sa bitStream::getUtf8( ifstream &input )
    */
   static bitArray getUtf8( ifstream &input )
   {
@@ -687,15 +817,15 @@ private:
 
   /**
    * @brief UTF-8  --->  huffman code
-   * bitArray is limited to length of 32 bits
-   * also huffman tree can be highly unbalanced
-   * for example occurances { 1, 2, 4, 8, ... 2^n } of characters
-   * produces tree with depth n-1, which means that it would be needed
-   * n-2 bits to represent all codes.
-   * For n = 35 codes wouldn't fit to bitArray, this could happen for file with size ~68.7GB
-   * For alternative implementation which uses recursion to avoid this problem
-   * see commit 95b12455:"hw01: bitArray simplified/ read ->get, write->put... faster t<1.1s"
-   * in which slower recursion version was last used( 1.5s --> 1.0s for all tests compresion/decompresion )
+   * @remark bitArray is limited to length of 32 bits. Also huffman tree can be highly
+   *         unbalanced. For example occurances { 1, 2, 4, 8, ... 2^n } of characters
+   *         produces tree with depth n-1, which means that it would be needed n-2 bits
+   *         to represent all codes. For n = 35 codes wouldn't fit to bitArray. This could 
+   *         happen for file with size ~68.7GB.
+   * 
+   * @sa For alternative implementation which uses recursion to avoid this problem
+   *     see commit 95b12455:"hw01: bitArray simplified/ read ->get, write->put... faster t<1.1s"
+   *     in which slower recursion version was last used( 1.5s --> 1.0s speed increase )
    */
   map< bitArray, bitArray > lookUpTable;
 };
