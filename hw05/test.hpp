@@ -141,7 +141,7 @@ private:
   void removeItem( const string &name );
 
   static int countExpired( const vector<item> &items, const CDate &date );
+  static bool isTypo( const string &a, const string &b );
 
   map< string, vector<item> > inventory;
-  vector< vector< multimap< string, char > > > typoResolver;
 };

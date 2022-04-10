@@ -34,22 +34,9 @@ bool operator<( const CDate &lhs, const CSupermarket::item &rhs )
 
 CSupermarket &CSupermarket::store( const string &name, const CDate &expiryDate, int count )
 {
-  if( inventory.find( name ) == inventory.end() )
-  {
-    typoResolver.resize( max( typoResolver.capacity(), name.size() ) );
-    auto &resolver = typoResolver[ name.size() - 1 ];
-    for( const auto &[fuzzy, idx]: fuzzyString( name ) )
-    {
-      if( resolver.size() != name.size() )
-        resolver.resize( name.size() );
-      resolver[ idx ].emplace( fuzzy, name[ idx ] );
-    }
-  }
-
   item newItem{ expiryDate, count };
   vector<item> &items = inventory[ name ];
   items.insert( lower_bound( items.begin(), items.end(), newItem ), newItem );
-
   return *this;
 }
 
@@ -87,29 +74,23 @@ list< pair<string, int> > CSupermarket::expired( const CDate &date ) const
   return result;
 }
 
-string CSupermarket::resolveName( const string &name ) const
+string CSupermarket::resolveName( const string &fuzzy ) const
 {
-  if( inventory.find( name ) != inventory.end() || typoResolver.size() < name.size() )
-    return name;
+  if( inventory.find( fuzzy ) != inventory.end() )
+    return fuzzy;
 
   string match;
-
-  auto &resolver = typoResolver[ name.size() - 1 ];
-  for( const auto &[ fuzzy, idx ] : fuzzyString( name ) )
+  for( const auto &[ name, _ ]: inventory )
   {
-    auto it = resolver[ idx ].lower_bound( fuzzy );
-    if( it == resolver[ idx ].end() || it->first != fuzzy )
+    if( !isTypo( name, fuzzy ) )
       continue;
 
     if( !match.empty() )
-      return name;
-
+      return fuzzy;
     match = name;
-    match[ idx ] = it->second;
-    if( ++it != resolver[ idx ].end() && it->first == fuzzy )
-      return name;
   }
-  return match.empty() ? name : match;
+
+  return match.empty() ? fuzzy : match;
 }
 
 bool CSupermarket::sellItem( const string &name, int &count )
@@ -142,19 +123,6 @@ bool CSupermarket::sellItem( const string &name, int &count )
 void CSupermarket::removeItem( const string &name )
 {
   inventory.erase( name );
-  vector< multimap< string, char > > &resolver = typoResolver[ name.size() - 1 ];
-
-  for( const auto &[ fuzzy, idx ] : fuzzyString( name ) )
-    for( auto [ range_start, range_end ] = resolver[idx].equal_range( fuzzy );
-          range_start != range_end; )
-    {
-      string original = range_start->first;
-      original.insert( idx, 1, range_start->second );
-      if( original == name )
-        range_start = resolver[ idx ].erase( range_start );
-      else
-        ++range_start;
-    }
 }
 
 int CSupermarket::countExpired( const vector<item> &items, const CDate &date )
@@ -165,4 +133,20 @@ int CSupermarket::countExpired( const vector<item> &items, const CDate &date )
         ++current )
     count += current->count;
   return count;
+}
+
+bool CSupermarket::isTypo( const string &a, const string &b )
+{
+  if( a.size() != b.size() )
+    return false;
+  bool mismatch = false;
+  for( uint32_t idx = 0; idx < a.size(); ++idx )
+  {
+    if( a[ idx ] == b[ idx ] )
+      continue;
+    if( mismatch )
+      return false;
+    mismatch = true;
+  }
+  return mismatch;
 }
