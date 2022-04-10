@@ -27,19 +27,25 @@ public:
 
   using string::string;
 
+  struct wordParts
+  {
+    string prefix, postfix;
+    char middle;
+  };
+
   struct iterator
   {
     using iterator_category = input_iterator_tag;
-    using difference_type = int32_t;
-    using value_type = pair<const string&, int>;
-    using pointer = pair<const string*, int>;
-    using reference = pair<const string&, int>;
+    using value_type = wordParts;
+    using pointer_type = const wordParts *;
+    using reference_type = const wordParts &;
 
     // BEGIN iterator
     explicit iterator( const string &iterated )
-            : currentFuzzy( !iterated.empty() ? iterated.begin() + 1 : iterated.begin(),
-                            iterated.end() ),
-              iteratedString( iterated )
+            : iteratedString( iterated ),
+              currentState{ { iterated.begin(), iterated.end() - !iterated.empty() },
+                            "",
+                            iterated.empty() ? '\0' : iterated[ iterated.size() - 1 ] }
     {};
 
     // END iterator
@@ -48,17 +54,17 @@ public:
               missingIdx( iterated.size() )
     {};
 
-    reference operator*() const { return { currentFuzzy, missingIdx }; };
-
-    pointer operator->() const { return { &currentFuzzy, missingIdx }; };
+    reference_type operator*() const { return currentState; };
+    pointer_type operator->() const { return &currentState; };
 
     iterator &operator++()
     {
       if( missingIdx == iteratedString.size() )
         return *this;
-
-      currentFuzzy[ missingIdx ] = iteratedString[ missingIdx ];
       ++missingIdx;
+      currentState.prefix.pop_back();
+      currentState.postfix.insert( 0, 1, iteratedString[  iteratedString.size() - missingIdx ] );
+      currentState.middle = iteratedString[ iteratedString.size() - missingIdx - 1 ];
       return *this;
     };
 
@@ -69,9 +75,9 @@ public:
       return temp;
     };
 
-    string currentFuzzy;
     const string &iteratedString;
     uint32_t missingIdx = 0;
+    value_type currentState;
   };
 
   friend bool operator==( const iterator &lhs, const iterator &rhs )
@@ -141,7 +147,8 @@ private:
   void removeItem( const string &name );
 
   static int countExpired( const vector<item> &items, const CDate &date );
-  static bool isTypo( const string &a, const string &b );
 
   map< string, vector<item> > inventory;
+  //   prefix:      postfix:  middle char
+  map< string, map< string, set< char > > > typoResolver;
 };

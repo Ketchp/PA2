@@ -121,13 +121,29 @@ int main ()
   auto &&expr = fuzzyString( "" );
   assert( ( expr.begin() == expr.end() ) );
 
-  array<string, 1> arr1{ "" };
-  for( const auto &[ fuzzy, idx ]: fuzzyString( "a" ) )
-    assert( fuzzy == arr1[ idx ] );
+  array<fuzzyString::wordParts, 1> arr1{{ {"", "", 'a'} }};
+  int idx = 0;
+  for( const auto &[ prefix, postfix, middle ]: fuzzyString( "a" ) )
+  {
+    assert( prefix == arr1[ idx ].prefix );
+    assert( postfix == arr1[ idx ].postfix );
+    assert( middle == arr1[ idx ].middle );
+    ++idx;
+  }
 
-  array<string, 5> arr2{ "bcde", "acde", "abde", "abce", "abcd" };
-  for( const auto &[ fuzzy, idx ]: fuzzyString( "abcde" ) )
-    assert( fuzzy == arr2[ idx ] );
+  array<fuzzyString::wordParts, 5> arr2{{ {"abcd", "", 'e' },
+                                          {"abc", "e", 'd' },
+                                          {"ab", "de", 'c' },
+                                          {"a", "cde", 'b' },
+                                          {"", "bcde", 'a' } }};
+  idx = 0;
+  for( const auto &[ prefix, postfix, middle ]: fuzzyString( "abcde" ) )
+  {
+    assert( prefix == arr2[ idx ].prefix );
+    assert( postfix == arr2[ idx ].postfix );
+    assert( middle == arr2[ idx ].middle );
+    ++idx;
+  }
 
 
   return EXIT_SUCCESS;
