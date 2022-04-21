@@ -3,116 +3,66 @@
 #endif /* __PROGTEST__ */
 
 
-// VVV BaseType implementation VVV
-
-BaseType::BaseType( size_t size )
+CBaseType::CBaseType( size_t size )
   : size( size )
 {}
 
-size_t BaseType::getSize() const
+size_t CBaseType::getSize() const
 {
   return size;
 }
 
-bool operator==( const BaseType &lhs, const BaseType &rhs )
+bool operator==( const CBaseType &lhs, const CBaseType &rhs )
 {
   return lhs.equalTo( rhs );
 }
 
-bool operator!=( const BaseType &lhs, const BaseType &rhs )
+bool operator!=( const CBaseType &lhs, const CBaseType &rhs )
 {
   return !( lhs == rhs );
 }
 
-BaseType &BaseType::addField( const string &name, const BaseType &field )
+CBaseType &CBaseType::add( const string & )
 {
-  try
-  {
-    return dynamic_cast<CDataTypeStruct &>( *this ).addField( name, field );
-  }
-  catch( bad_cast & )
-  {
-    stringstream typeName;
-    typeName << "Cannot use addField() for type: " << *this;
-    throw invalid_argument( typeName.str() );
-  }
+  stringstream typeName( "Cannot use add() for type: "s, ios_base::out | ios_base::ate );
+  typeName << *this;
+  throw invalid_argument( typeName.str() );
 }
 
-BaseType &BaseType::add( const string &newEnum )
+const CBaseType &CBaseType::field( const string & ) const
 {
-  try
-  {
-    return dynamic_cast<CDataTypeEnum &>( *this ).add( newEnum );
-  }
-  catch( bad_cast & )
-  {
-    stringstream typeName;
-    typeName << "Cannot use add() for type: " << *this;
-    throw invalid_argument( typeName.str() );
-  }
+  stringstream typeName( "Cannot use field() for type: "s, ios_base::out | ios_base::ate );
+  typeName << *this;
+  throw invalid_argument( typeName.str() );
 }
 
-const BaseType &BaseType::field( const string &name ) const
+CBaseType &CBaseType::element() const
 {
-  try
-  {
-    return dynamic_cast<const CDataTypeStruct &>( *this ).field( name );
-  }
-  catch( bad_cast & )
-  {
-    stringstream typeName;
-    typeName << "Cannot use field() for type: " << *this;
-    throw invalid_argument( typeName.str() );
-  }
+  stringstream typeName( "Cannot use element() for type: "s, ios_base::out | ios_base::ate );
+  typeName << *this;
+  throw invalid_argument( typeName.str() );
 }
 
-BaseType &BaseType::element() const
+ostream &operator<<( ostream &os, const CBaseType &type )
 {
-  try
-  {
-    return dynamic_cast<const CDataTypePtr &>( *this ).element();
-  }
-  catch( bad_cast & )
-  {
-    try
-    {
-      return dynamic_cast<const CDataTypeArray &>( *this ).element();
-    }
-    catch( bad_cast & )
-    {
-      stringstream typeName;
-      typeName << "Cannot use element() for type: " << *this;
-      throw invalid_argument( typeName.str() );
-    }
-  }
+  return type.print( os, 0, ""s );
 }
 
-ostream &operator<<( ostream &os, const BaseType &type )
-{
-  return type.print( os, 0, "" );
-}
-
-/*
- * VVV CDataTypeInt implementation VVV
- */
-
-CDataTypeInt::CDataTypeInt() : BaseType( 4 ) {}
+CDataTypeInt::CDataTypeInt()
+  : CBaseType( 4 )
+{}
 
 constexpr bool CDataTypeInt::equalTo( const CDataTypeInt & )
 {
   return true;
 }
 
-bool CDataTypeInt::equalTo( const BaseType &other ) const
+bool CDataTypeInt::equalTo( const CBaseType &other ) const
 {
-  try
-  {
-    return equalTo( dynamic_cast<const CDataTypeInt &>( other ) );
-  }
-  catch( bad_cast & )
-  {
-    return false;
-  }
+  auto intType = dynamic_cast<const CDataTypeInt *>( &other );
+  if( intType )
+    return equalTo( *intType );
+  return false;
 }
 
 ostream &CDataTypeInt::print( ostream &os, uint32_t indent, const string &name ) const
@@ -120,32 +70,27 @@ ostream &CDataTypeInt::print( ostream &os, uint32_t indent, const string &name )
   return os << string( indent, ' ' ) << "int" << name;
 }
 
-BaseType *CDataTypeInt::clone() const
+CBaseType *CDataTypeInt::clone() const
 {
   return new CDataTypeInt;
 }
 
-/*
- * VVV CDataTypeDouble implementation VVV
- */
 
-CDataTypeDouble::CDataTypeDouble() : BaseType( 8 ) {}
+CDataTypeDouble::CDataTypeDouble()
+  : CBaseType( 8 )
+{}
 
 constexpr bool CDataTypeDouble::equalTo( const CDataTypeDouble & )
 {
   return true;
 }
 
-bool CDataTypeDouble::equalTo( const BaseType &other ) const
+bool CDataTypeDouble::equalTo( const CBaseType &other ) const
 {
-  try
-  {
-    return equalTo( dynamic_cast<const CDataTypeDouble &>( other ) );
-  }
-  catch( bad_cast & )
-  {
-    return false;
-  }
+  auto doubleType = dynamic_cast<const CDataTypeDouble *>( &other );
+  if( doubleType )
+    return equalTo( *doubleType );
+  return false;
 }
 
 ostream &CDataTypeDouble::print( ostream &os, uint32_t indent, const string &name ) const
@@ -153,13 +98,15 @@ ostream &CDataTypeDouble::print( ostream &os, uint32_t indent, const string &nam
   return os << string( indent, ' ' ) << "double" << name;
 }
 
-BaseType *CDataTypeDouble::clone() const { return new CDataTypeDouble; }
+CBaseType *CDataTypeDouble::clone() const
+{
+  return new CDataTypeDouble;
+}
 
-/*
- * VVV CDataTypeEnum implementation VVV
- */
 
-CDataTypeEnum::CDataTypeEnum() : BaseType( 4 ) {}
+CDataTypeEnum::CDataTypeEnum()
+  : CBaseType( 4 )
+{}
 
 bool CDataTypeEnum::equalTo( const CDataTypeEnum &other ) const
 {
@@ -172,16 +119,12 @@ bool CDataTypeEnum::equalTo( const CDataTypeEnum &other ) const
   return true;
 }
 
-bool CDataTypeEnum::equalTo( const BaseType &other ) const
+bool CDataTypeEnum::equalTo( const CBaseType &other ) const
 {
-  try
-  {
-    return equalTo( dynamic_cast<const CDataTypeEnum &>( other ) );
-  }
-  catch( bad_cast & )
-  {
-    return false;
-  }
+  auto enumType = dynamic_cast<const CDataTypeEnum *>( &other );
+  if( enumType )
+    return equalTo( *enumType );
+  return false;
 }
 
 ostream &CDataTypeEnum::print( ostream &os, uint32_t indent, const string &name ) const
@@ -194,61 +137,45 @@ ostream &CDataTypeEnum::print( ostream &os, uint32_t indent, const string &name 
       os << string( indent + 2, ' ' ) << *it << ",\n";
     os << string( indent + 2, ' ' ) << enums.back() << '\n';
   }
-  os << string( indent, ' ' ) << '}';
-  return os << name;
+  os << string( indent, ' ' ) << '}' << name;
+  return os;
 }
 
-BaseType &CDataTypeEnum::add( const string &newEnum )
+CBaseType &CDataTypeEnum::add( const string &newEnum )
 {
   for( const string &used : enums )
     if( used == newEnum )
-      throw invalid_argument( "Duplicate enum value: " + newEnum );
+      throw invalid_argument( "Duplicate enum value: "s + newEnum );
   enums.emplace_back( newEnum );
   return *this;
 }
 
-BaseType *CDataTypeEnum::clone() const { return new CDataTypeEnum( *this ); }
-
-/*
- * VVV CDataTypeStruct implementation VVV
- */
-
-CDataTypeStruct::CDataTypeStruct() : BaseType( 0 ) {}
-
-CDataTypeStruct::CDataTypeStruct( const CDataTypeStruct &other )
-  : BaseType( other.size )
+CBaseType *CDataTypeEnum::clone() const
 {
-  for( const auto &[ name, field ] : other.fields )
-    fields.emplace_back( name, unique_ptr<BaseType>( field->clone() ) );
+  return new CDataTypeEnum( *this );
 }
 
-CDataTypeStruct &CDataTypeStruct::operator=( const CDataTypeStruct &other )
-{
-  if( this == &other )
-    return *this;
-  fields.resize( 0 );
-  fields.reserve( other.fields.size() );
-  for( const auto &[ name, field ] : other.fields )
-    fields.emplace_back( name, unique_ptr<BaseType>( field->clone() ) );
-  return *this;
-}
 
-CDataTypeStruct &CDataTypeStruct::addField( const string &name, const BaseType &field )
+CDataTypeStruct::CDataTypeStruct()
+  : CBaseType( 0 )
+{}
+
+CDataTypeStruct &CDataTypeStruct::addField( string name, const CBaseType &field )
 {
   if( findField( name ) )
-    throw invalid_argument( "Duplicate field: " + name );
+    throw invalid_argument( "Duplicate field: "s + move( name ) );
 
-  fields.emplace_back( name, unique_ptr<BaseType>( field.clone() ) );
+  fields.emplace_back( make_pair( move( name ), copy_ptr<CBaseType>( field ) ) );
   size += field.getSize();
   return *this;
 }
 
-const BaseType &CDataTypeStruct::field( const string &name ) const
+const CBaseType &CDataTypeStruct::field( const string &name ) const
 {
-  const BaseType *field_ptr = findField( name );
-  if( field_ptr )
-    return *field_ptr;
-  throw invalid_argument( "Unknown field: " + name );
+  const CBaseType *fieldPtr = findField( name );
+  if( fieldPtr )
+    return *fieldPtr;
+  throw invalid_argument( "Unknown field: "s + name );
 }
 
 bool CDataTypeStruct::equalTo( const CDataTypeStruct &other ) const
@@ -267,32 +194,32 @@ bool CDataTypeStruct::equalTo( const CDataTypeStruct &other ) const
   return true;
 }
 
-bool CDataTypeStruct::equalTo( const BaseType &other ) const
+bool CDataTypeStruct::equalTo( const CBaseType &other ) const
 {
-  try
-  {
-    return equalTo( dynamic_cast<const CDataTypeStruct &>( other ) );
-  }
-  catch( bad_cast & )
-  {
-    return false;
-  }
+  auto structType = dynamic_cast<const CDataTypeStruct *>( &other );
+  if( structType )
+    return equalTo( *structType );
+  return false;
 }
 
 ostream &CDataTypeStruct::print( ostream &os, uint32_t indent, const string &name ) const
 {
   os << string( indent, ' ' ) << "struct\n";
   os << string( indent, ' ' ) << "{\n";
+
   for( const auto &[ field_name, field ] : fields )
     field->print( os, indent + 2, ' ' + field_name ) << ";\n";
 
-  os << string( indent, ' ' ) << '}';
-  return os << name;
+  os << string( indent, ' ' ) << '}' << name;
+  return os;
 }
 
-BaseType *CDataTypeStruct::clone() const { return new CDataTypeStruct( *this ); }
+CBaseType *CDataTypeStruct::clone() const
+{
+  return new CDataTypeStruct( *this );
+}
 
-const BaseType *CDataTypeStruct::findField( const string &needleName ) const
+const CBaseType *CDataTypeStruct::findField( const string &needleName ) const
 {
   for( const auto &[ name, ptr ] : fields )
     if( name == needleName )
@@ -300,29 +227,11 @@ const BaseType *CDataTypeStruct::findField( const string &needleName ) const
   return nullptr;
 }
 
-CDataTypePtr::CDataTypePtr( const BaseType &type )
-  : BaseType( 8 ), type( type.clone() )
+CDataTypePtr::CDataTypePtr( const CBaseType &type )
+  : CBaseType( 8 ), type( type )
 {}
 
-CDataTypePtr::CDataTypePtr( const CDataTypePtr &other )
-  : BaseType( 8 ), type( other.type->clone() )
-{}
-
-CDataTypePtr &CDataTypePtr::operator=( const CDataTypePtr &other )
-{
-  if( this == &other )
-    return *this;
-  delete type;
-  type = other.type->clone();
-  return *this;
-}
-
-CDataTypePtr::~CDataTypePtr()
-{
-  delete type;
-}
-
-BaseType &CDataTypePtr::element() const
+CBaseType &CDataTypePtr::element() const
 {
   return *type;
 }
@@ -332,87 +241,53 @@ bool CDataTypePtr::equalTo( const CDataTypePtr &other ) const
   return *type == *other.type;
 }
 
-bool CDataTypePtr::equalTo( const BaseType &other ) const
+bool CDataTypePtr::equalTo( const CBaseType &other ) const
 {
-  try
-  {
-    return equalTo( dynamic_cast<const CDataTypePtr &>( other ) );
-  }
-  catch( bad_cast & )
-  {
-    return false;
-  }
+  auto ptrType = dynamic_cast<const CDataTypePtr *>( &other );
+  if( ptrType )
+    return equalTo( *ptrType );
+  return false;
 }
 
 ostream &CDataTypePtr::print( ostream &os, uint32_t indent, const string &name ) const
 {
-  try
-  {
-    return dynamic_cast< const CDataTypeArray & >( *type ).print( os, indent, "(*" + name + ")" );
-  }
-  catch( bad_cast & )
-  {
-    return type->print( os, indent, "*" + name );
-  }
+  auto arrayType = dynamic_cast< const CDataTypeArray * >( type.get() );
+  if( arrayType )
+    return arrayType->print( os, indent, "(*"s + name + ")"s );
+  return type->print( os, indent, "*"s + name );
 }
 
-BaseType *CDataTypePtr::clone() const { return new CDataTypePtr( *this ); }
+CBaseType *CDataTypePtr::clone() const { return new CDataTypePtr( *this ); }
 
 
-CDataTypeArray::CDataTypeArray( size_t array_size, const BaseType &type )
-  : BaseType( type.getSize() * array_size ),
-    type( type.clone() ),
-    array_size( array_size )
+CDataTypeArray::CDataTypeArray( size_t arraySize, const CBaseType &type )
+  : CBaseType( arraySize * type.getSize() ),
+    type( type ), arraySize( arraySize )
 {}
 
-CDataTypeArray::CDataTypeArray( const CDataTypeArray &other )
-  : BaseType( other.getSize() ),
-    type( other.type->clone() ),
-    array_size( other.array_size )
-{}
-
-CDataTypeArray &CDataTypeArray::operator=( const CDataTypeArray &other )
-{
-  if( this == &other )
-    return *this;
-  delete type;
-  type = other.type->clone();
-  size = other.getSize();
-  return *this;
-}
-
-CDataTypeArray::~CDataTypeArray()
-{
-  delete type;
-}
-
-BaseType &CDataTypeArray::element() const
+CBaseType &CDataTypeArray::element() const
 {
   return *type;
 }
 
 bool CDataTypeArray::equalTo( const CDataTypeArray &other ) const
 {
-  return *type == *other.type && array_size == other.array_size;
+  return arraySize == other.arraySize && *type == *other.type;
 }
 
-bool CDataTypeArray::equalTo( const BaseType &other ) const
+bool CDataTypeArray::equalTo( const CBaseType &other ) const
 {
-  try
-  {
-    return equalTo( dynamic_cast< const CDataTypeArray & >( other ) );
-  }
-  catch( bad_cast & )
-  {
-    return false;
-  }
+  auto arrayType = dynamic_cast<const CDataTypeArray *>( &other );
+  if( arrayType )
+    return equalTo( *arrayType );
+  return false;
 }
 
 ostream &CDataTypeArray::print( ostream &os, uint32_t indent, const string &name ) const
 {
-  return type->print( os, indent, name + "[" + to_string( array_size ) + "]" );
+  return type->print( os, indent, name + "[" + to_string( arraySize ) + "]" );
 }
 
-BaseType *CDataTypeArray::clone() const { return new CDataTypeArray( *this ); }
+CBaseType *CDataTypeArray::clone() const { return new CDataTypeArray( *this ); }
 
 
