@@ -3,10 +3,9 @@
 static bool whitespaceMatch( const string &a, const string &b )
 {
   const static string whiteSpaces( " \n\t\r" );
-  for( auto ita = a.begin(),
-               itb = b.begin(); true;
-       ++ita,
-               ++itb)
+  auto ita = a.begin(),
+       itb = b.begin();
+  while( true )
   {
     while(  ita != a.end() && whiteSpaces.find( *ita ) != string::npos )
       ++ita;
@@ -17,10 +16,10 @@ static bool whitespaceMatch( const string &a, const string &b )
     if( ita == a.end() && itb == b.end() )
       return true;
 
-    if( ( ita == a.end() ) != ( itb == b.end() ) )
+    if( ita == a.end() || itb == b.end() )
       return false;
 
-    if( *ita != *itb )
+    if( *ita++ != *itb++ )
       return false;
   }
 }

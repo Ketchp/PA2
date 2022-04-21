@@ -129,6 +129,7 @@ protected:
   size_t size;
 };
 
+
 class CDataTypeInt : public CBaseType
 {
 public:
@@ -157,6 +158,7 @@ private:
   [[nodiscard]] constexpr static bool equalTo( const CDataTypeInt &other );
 };
 
+
 class CDataTypeDouble : public CBaseType
 {
 public:
@@ -184,6 +186,7 @@ private:
    */
   [[nodiscard]] constexpr static bool equalTo( const CDataTypeDouble &other );
 };
+
 
 class CDataTypeEnum : public CBaseType
 {
@@ -228,6 +231,7 @@ private:
    */
   vector<string> enums;
 };
+
 
 class CDataTypeStruct : public CBaseType
 {
@@ -325,6 +329,7 @@ private:
    */
   copy_ptr<CBaseType> type;
 };
+
 
 class CDataTypeArray : public CBaseType
 {
