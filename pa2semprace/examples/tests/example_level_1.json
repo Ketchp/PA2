@@ -1,0 +1,13 @@
+{
+  "screen":
+  {
+    "size": [ 1000, 800 ],
+    "bg_color": [ 200, 200, 200, 255 ]
+  },
+  "items":
+  [
+    { "id": 1, "type": "rectangle", "position": [ 500, 780 ], "size": [ 1000, 20 ], "color": [ 255,   0, 0, 127 ] },
+    { "id": 2, "type": "rectangle", "position": [ 500,  20 ], "size": [ 1000, 20 ], "color": [   0, 255, 0, 127 ] },
+    { "id": 3, "type": "circle", "position": [ 500, 400 ], "size": 50 }
+  ]
+}
