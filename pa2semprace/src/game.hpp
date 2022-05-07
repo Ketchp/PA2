@@ -18,11 +18,9 @@ private:
   static math::vector loadLevelSize( const jsonArray &levelSizeDescription );
   void loadItems( const jsonArray &itemsDescription );
   void loadItem( const jsonObject &itemDescription );
-//  static int loadItemId( const jsonObject &itemDescription );
   static physicsAttributes loadItemPhysics( const jsonObject &itemDescription );
   static std::string loadItemType( const jsonObject &itemDescription );
   static math::vector loadItemPosition( const jsonObject &itemDescription );
-  static alphaColor loadItemColor( const jsonObject &itemDescription );
   static double loadItemSize1D( const jsonObject &itemDescription );
   static math::vector loadItemSize2D( const jsonObject &itemDescription );
 

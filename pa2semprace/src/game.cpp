@@ -114,19 +114,6 @@ physicsAttributes CGame::loadItemPhysics( const jsonObject &itemDescription )
   return physicsAttributes{ mass };
 }
 
-/*
-int game::loadItemId( const jsonObject &itemDescription )
-{
-  try
-  {
-    return (int)itemDescription[ "id" ];
-  }
-  catch( std::out_of_range & )
-  {
-    throw std::invalid_argument( "Missing item id.\n" );
-  }
-}*/
-
 std::string CGame::loadItemType( const jsonObject &itemDescription )
 {
   try
@@ -153,26 +140,6 @@ math::vector CGame::loadItemPosition( const jsonObject &itemDescription )
   {
     std::cerr << e.what();
     throw std::invalid_argument( "Expected item position array.\n" );
-  }
-}
-
-alphaColor CGame::loadItemColor( const jsonObject &itemDescription )
-{
-  try
-  {
-    auto itemColorDescription = dynamic_cast<const jsonArray &>( itemDescription[ "color" ] );
-    size_t colSize = itemColorDescription.size();
-    if( colSize < 3 || 4 < colSize )
-      throw std::invalid_argument( "Color expected array of three or four elements.\n" );
-    return { (float)itemColorDescription[ 0 ],
-             (float)itemColorDescription[ 1 ],
-             (float)itemColorDescription[ 2 ],
-             colSize == 4 ? (float)itemColorDescription[ 3 ] : 127.f };
-  }
-  catch( std::invalid_argument &e )
-  {
-    std::cerr << e.what();
-    throw std::invalid_argument( "Item color must be an array.\n" );
   }
 }
 

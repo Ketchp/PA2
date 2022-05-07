@@ -1,6 +1,5 @@
 #include <GL/freeglut.h>
-#include "matrix.hpp"
-#include "vector.hpp"
+#include "linearAlgebra.hpp"
 #include <iostream>
 
 int main( int argc, char *argv[] )
@@ -19,7 +18,7 @@ int main( int argc, char *argv[] )
 //
   // glutDestroyWindow( winID );
 
-  math::vector<2> a(5, 6);
+  math::vector a(5, 6);
   std::cout << a[0] << a[1] << std::endl;
 
 }

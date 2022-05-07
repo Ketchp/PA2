@@ -65,6 +65,8 @@ CManifold CLine::getManifold( CLine *other )
 {
   math::matrix overlapEquationMatrix{ begin() - end(),
                                       other->end() - other->begin() };
+
+  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
 }
 
 GLUquadric *CCircle::gluRenderer = nullptr;
@@ -88,6 +90,21 @@ void CCircle::updateBoundingBox()
 {
   m_BBx = { m_position[ 0 ] - m_size, m_position[ 0 ] + m_size };
 //  m_BBy = { m_position[ 1 ] - m_size, m_position[ 1 ] + m_size };
+}
+
+CManifold CCircle::getManifold( CObject *other )
+{
+  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+}
+
+CManifold CCircle::getManifold( CLine *other )
+{
+  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+}
+
+CManifold CCircle::getManifold( CCircle *other )
+{
+  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
 }
 
 
@@ -148,5 +165,25 @@ math::vector CComplexObject::calculateCentreOfMass( const std::vector<math::vect
     weightedPosition += direction.norm() * position;
   }
   return weightedPosition / weight / 2;
+}
+
+CManifold CComplexObject::getManifold( CObject *other )
+{
+  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+}
+
+CManifold CComplexObject::getManifold( CLine *other )
+{
+  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+}
+
+CManifold CComplexObject::getManifold( CCircle *other )
+{
+  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+}
+
+CManifold CComplexObject::getManifold( CComplexObject *other )
+{
+  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
 }
 

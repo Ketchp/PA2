@@ -1,12 +1,12 @@
 #pragma once
-#include "vector.hpp"
-#include "matrix.hpp"
+#include "linearAlgebra.hpp"
 #include "physicsAttributes.hpp"
 #include "object.hpp"
 #include <vector>
 #include <memory>
 #include <functional>
 #include <queue>
+
 
 class CObject;
 class CPhysicsObject;

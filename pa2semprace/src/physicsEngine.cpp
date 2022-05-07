@@ -98,7 +98,7 @@ CPhysicsEngine::calculateDepths( const std::vector<std::pair<CObject *, CObject 
   std::vector<CManifold> collisions;
   for( auto [ first, second ]: possibleCollisions )
   {
-    CManifold collision = first->getManifold( possibleCollisions );
+    CManifold collision = first->getManifold( second );
     if( !collision.overlapVector.isZero() )
       collisions.emplace_back( collision );
   }

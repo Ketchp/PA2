@@ -2,11 +2,12 @@
 #include <GL/freeglut.h>
 #include "physicsAttributes.hpp"
 #include <string>
-#include <vector>
-#include "physicsEngine.hpp"
+#include "linearAlgebra.hpp"
 #include "helpers.hpp"
-#include "vector.hpp"
-#include "matrix.hpp"
+#include "physicsEngine.hpp"
+#include <vector>
+
+struct CManifold;
 
 class CObject
 {
@@ -27,7 +28,7 @@ public:
   CPhysicsObject( math::vector position, double rotation, const physicsAttributes &attributes );
   CPhysicsObject( math::vector position, const physicsAttributes &attributes );
   ~CPhysicsObject() override = default;
-  void render() const override;
+  void render() const override = 0;
   void updateBoundingBox() override = 0;
   CManifold getManifold( CObject * ) override = 0;
   physicsAttributes m_attributes;
