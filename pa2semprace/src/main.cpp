@@ -1,14 +1,11 @@
-#include <GL/freeglut.h>
-#include <iostream>
 #include "game.hpp"
-
+#include <iostream>
 
 int main(int argc, char **argv)
 {
-  // init GLUT and create window
-  glutInit(&argc, argv);
-  game mainGame;
+  CGame mainGame( &argc, argv );
 
   mainGame.mainLoop();
+  std::cout << "Thanks for playing :)" << std::endl;
   return 0;
 }

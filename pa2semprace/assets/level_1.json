@@ -6,9 +6,13 @@
   },
   "items":
   [
-    { "id": 1, "type": "rectangle", "position": [ 0, 10 ], "size": [ 10, 10 ], "color": [ 255,   0, 0, 127 ] },
-    { "id": 2, "type": "rectangle", "position": [ 0, 20 ], "size": [ 10, 10 ], "color": [   0, 255, 0 ] },
-    { "id": 2, "type": "rectangle", "position": [ 0,  0 ], "size": [ 10, 10 ], "color": [   0,   0, 255 ] },
-    { "id": 3, "type": "circle", "position": [ 500, 400 ], "size": 50 }
+    { "type": "bounding box" },
+    { "type": "rectangle", "position": [ 500, 400 ], "size": [  100, 100 ], "color": [   0, 255, 255 ],
+      "physics":  { "mass": 50 } },
+    { "type": "rectangle", "position": [ 100, 100 ], "size": [   50,  50 ], "color": [ 255,   0, 255 ],
+      "physics":  { "mass": 50 } },
+    { "type": "rectangle", "position": [ 800, 600 ], "size": [   50,  50 ], "color": [ 255, 255, 255 ],
+      "physics":  { "mass": 50 } },
+    { "type": "circle", "position": [ 500, 600 ], "size": 50, "physics":  { "mass": 50 }  }
   ]
 }

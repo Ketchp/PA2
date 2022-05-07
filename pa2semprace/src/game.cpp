@@ -1,104 +1,246 @@
 #include "game.hpp"
 #include "object.hpp"
-#include "jsonParser.hpp"
 
-game::game()
+CGame::CGame( int *argcPtr, char *argv[] )
+  : m_window( argcPtr, argv )
 {
-  m_window.init();
 
-  m_window.registerDrawEvent( this, &game::update );
-  m_window.registerTimerEvent( this, &game::nextFrame, 2000 );
-  m_window.registerWindowCloseEvent( this, &game::gameEnd );
-  // todo load levels
+  m_engine.addField( CForceField::gravitationalField( 10 ) );
 
-  JSON json( "assets/level_1.json" );
+  loadLevel( "assets/level_1.json" );
+
+  m_window.registerDrawEvent( this, &CGame::redraw );
+  m_window.registerMouseButtonEvent( this, &CGame::mouseClick );
+  m_window.registerMotionButtonEvent( this, &CGame::mouseMove );
+  m_window.registerTimerEvent( this, &CGame::nextFrame, 2000 );
+}
+
+void CGame::loadLevel( const std::string &levelFileName )
+{
+  JSON json( levelFileName );
   if( json.m_type != jsonType::jsonObjectType )
-    throw std::invalid_argument( "Level description must be json object." );
+    throw std::invalid_argument( "Level description must be json object.\n" );
 
-  jsonObject &levelDescription = dynamic_cast<jsonObject &>( json.get() );
-  std::set<std::string> descriptionKeys = levelDescription.getKeys();
+  auto &levelDescription = dynamic_cast<jsonObject &>( json.get() );
 
-  if( descriptionKeys.count( "items" ) )
+  if( levelDescription.count( "screen" ) )
+    loadLevelScreen( dynamic_cast<const jsonObject &>(levelDescription[ "screen" ]) );
+
+  if( levelDescription.count( "items" ) )
+    loadItems( dynamic_cast<const jsonArray &>(levelDescription[ "items" ]) );
+
+}
+
+void CGame::loadLevelScreen( const jsonObject &screenDescription )
+{
+  std::set<std::string> attributes = screenDescription.getKeys();
+
+  math::vector levelScreenSize{ 800, 600 };
+  if( attributes.count( "size" ) )
+    levelScreenSize = loadLevelSize( dynamic_cast<const jsonArray &>( screenDescription[ "size" ] ) );
+  m_window.resizeView( 0, levelScreenSize[ 0 ], 0, levelScreenSize[ 1 ] );
+
+  // todo load color
+
+}
+
+math::vector CGame::loadLevelSize( const jsonArray &levelSizeDescription )
+{
+  if( levelSizeDescription.size() != 2 )
+    throw std::invalid_argument( "Screen size array must have size 2.\n" );
+  return { (double)levelSizeDescription[ 0 ],
+           (double)levelSizeDescription[ 1 ] };
+}
+
+
+void CGame::loadItems( const jsonArray &itemsDescription )
+{
+  size_t objectCount = itemsDescription.size();
+  for( size_t idx = 0; idx < objectCount; ++idx )
+    loadItem( dynamic_cast<const jsonObject &>( itemsDescription[ idx ] ) );
+}
+
+void CGame::loadItem( const jsonObject &itemDescription )
+{
+  std::set<std::string> itemAttributes = itemDescription.getKeys();
+//  int id = loadItemId( itemDescription );
+  std::string type = loadItemType( itemDescription );
+  if( type == "bounding box" )
   {
-    size_t objectCount = levelDescription[ "items" ].size();
-    for( size_t idx = 0; idx < objectCount; ++idx )
-    {
-      std::set<std::string> itemAttributes = levelDescription[ "items" ][ idx ].getKeys();
-      int id;
-      std::string type;
-      float x, y;
-      if( itemAttributes.count( "id" ) )
-        id = (int)levelDescription[ "items" ][ idx ][ "id" ];
-      else throw std::invalid_argument( "Missing item id." );
-      if( itemAttributes.count( "type" ) )
-        type = (std::string)levelDescription[ "items" ][ idx ][ "type" ];
-      else throw std::invalid_argument( "Missing item type." );
-      if( itemAttributes.count( "position" ) )
-      {
-        if( levelDescription[ "items" ][ idx ][ "position" ].size() != 2 )
-          throw std::invalid_argument( "Position expected array of two elements." );
-        x = (float)levelDescription[ "items" ][ idx ][ "position" ][ 0 ];
-        y = (float)levelDescription[ "items" ][ idx ][ "position" ][ 1 ];
-      }
-      else throw std::invalid_argument( "Missing item position." );
-      alphaColor itemColor{ 255, 255, 255, 255 };
-      if( itemAttributes.count( "color" ) )
-      {
-        size_t colSize = levelDescription[ "items" ][ idx ][ "color" ].size();
-        if( colSize < 3 || 4 < colSize )
-          throw std::invalid_argument( "Color expected array of three or four elements." );
-        itemColor.red = (int)levelDescription[ "items" ][ idx ][ "color" ][ 0 ];
-        itemColor.green = (int)levelDescription[ "items" ][ idx ][ "color" ][ 1 ];
-        itemColor.blue = (int)levelDescription[ "items" ][ idx ][ "color" ][ 2 ];
-        itemColor.alpha = colSize == 4 ? (int)levelDescription[ "items" ][ idx ][ "color" ][ 3 ] : 255;
-      }
+    math::vector screenSize = m_window.getViewSize();
+    physicsAttributes immovable( HUGE_VAL );
 
-      if( type == "rectangle" )
-      {
-        float width, height;
-        if( itemAttributes.count( "size" ) )
-        {
-          if( levelDescription[ "items" ][ idx ][ "size" ].size() != 2 )
-            throw std::invalid_argument( "Rectangle size must be array of two elements." );
-          width = (float)levelDescription[ "items" ][ idx ][ "size" ][ 0 ];
-          height = (float)levelDescription[ "items" ][ idx ][ "size" ][ 1 ];
-        }
-        else throw std::invalid_argument( "Rectangle expected attribute size." );
+    m_physicsObjects.emplace_back( (CObject *) new CComplexObject(
+            CComplexObject::makeRectangle( screenSize / 2,
+                                           0.999 * screenSize,
+                                           immovable ) ) );
 
-        objects.emplace_back( std::unique_ptr<object>( new rectangle( id, x, y, width, height, itemColor ) ) );
-        std::cout << "New item: "
-        << id << ", "
-        << x << ", "
-        << y << ", "
-        << width << ", "
-        << height << std::endl;
-      }
-    }
+    return;
+  }
+
+  math::vector position = loadItemPosition( itemDescription );
+
+  /*
+  alphaColor itemColor{ 255, 255, 255, 255 };
+  if( itemAttributes.count( "color" ) )
+    itemColor = loadItemColor( itemDescription );
+  */
+
+  physicsAttributes physicsProperties( HUGE_VAL );
+  if( itemAttributes.count( "physics" ) )
+    physicsProperties = loadItemPhysics( dynamic_cast<const jsonObject &>( itemDescription[ "physics" ] ) );
+
+  if( type == "rectangle" )
+  {
+    math::vector size = loadItemSize2D( itemDescription );
+
+    m_physicsObjects.emplace_back( (CObject *) new CComplexObject(
+            CComplexObject::makeRectangle( position,
+                                           size,
+                                           physicsProperties ) ) );
+  }
+  else if( type == "circle" )
+  {
+    double size = loadItemSize1D( itemDescription );
+    m_physicsObjects.emplace_back( (CObject *)( new CCircle( position,
+                                                             size,
+                                                             physicsProperties ) ) );
   }
 }
 
-void game::nextFrame()
+physicsAttributes CGame::loadItemPhysics( const jsonObject &itemDescription )
 {
-  std::cout << "Hurray" << std::endl;
-  for( auto &item: objects )
+  double mass = (double)itemDescription["mass"];
+  return physicsAttributes{ mass };
+}
+
+/*
+int game::loadItemId( const jsonObject &itemDescription )
+{
+  try
   {
-    dynamic_cast<rectangle *>(item.get())->m_position += vector2D{ 2, 2 };
+    return (int)itemDescription[ "id" ];
   }
-  m_window.registerTimerEvent( this, &game::nextFrame, 1000 );
-  update();
-}
+  catch( std::out_of_range & )
+  {
+    throw std::invalid_argument( "Missing item id.\n" );
+  }
+}*/
 
-void game::update()
+std::string CGame::loadItemType( const jsonObject &itemDescription )
 {
-  m_window.drawItems( objects );
+  try
+  {
+    return (std::string)itemDescription[ "type" ];
+  }
+  catch( std::invalid_argument & )
+  {
+    throw std::invalid_argument( "Missing item type.\n" );
+  }
 }
 
-void game::mainLoop()
+math::vector CGame::loadItemPosition( const jsonObject &itemDescription )
+{
+  try
+  {
+    auto itemPosition = dynamic_cast<const jsonArray &>( itemDescription[ "position" ] );
+    if( itemPosition.size() != 2 )
+      throw std::invalid_argument( "Item position array must be size 2.\n" );
+    return { (double)itemPosition[ 0 ],
+             (double)itemPosition[ 1 ] };
+  }
+  catch( std::invalid_argument &e )
+  {
+    std::cerr << e.what();
+    throw std::invalid_argument( "Expected item position array.\n" );
+  }
+}
+
+alphaColor CGame::loadItemColor( const jsonObject &itemDescription )
+{
+  try
+  {
+    auto itemColorDescription = dynamic_cast<const jsonArray &>( itemDescription[ "color" ] );
+    size_t colSize = itemColorDescription.size();
+    if( colSize < 3 || 4 < colSize )
+      throw std::invalid_argument( "Color expected array of three or four elements.\n" );
+    return { (float)itemColorDescription[ 0 ],
+             (float)itemColorDescription[ 1 ],
+             (float)itemColorDescription[ 2 ],
+             colSize == 4 ? (float)itemColorDescription[ 3 ] : 127.f };
+  }
+  catch( std::invalid_argument &e )
+  {
+    std::cerr << e.what();
+    throw std::invalid_argument( "Item color must be an array.\n" );
+  }
+}
+
+double CGame::loadItemSize1D( const jsonObject &itemDescription )
+{
+  try
+  {
+    return (double)itemDescription[ "size" ];
+  }
+  catch( std::invalid_argument & )
+  {
+    throw std::invalid_argument( "Item must contain size field.\n" );
+  }
+}
+
+math::vector CGame::loadItemSize2D( const jsonObject &itemDescription )
+{
+  try
+  {
+    auto itemSizeDescription = dynamic_cast<const jsonArray &>( itemDescription[ "size" ] );
+    if( itemSizeDescription.size() != 2 )
+      throw std::invalid_argument( "Item size must by array of size 2.\n" );
+    return { (double)itemSizeDescription[ 0 ],
+             (double)itemSizeDescription[ 1 ] };
+  }
+  catch( std::invalid_argument &e )
+  {
+    std::cerr << e.what();
+    throw std::invalid_argument( "Wrong/no size field.\n" );
+  }
+}
+
+
+
+void CGame::nextFrame()
+{
+  m_engine.step( m_physicsObjects );
+  m_window.registerTimerEvent( this, &CGame::nextFrame, 100 );
+  redraw();
+}
+
+void CGame::redraw()
+{
+  m_window.drawItems( m_physicsObjects );
+}
+
+void CGame::mainLoop()
 {
   m_window.mainLoop();
 }
 
-void game::gameEnd()
+void CGame::mouseClick( int button, int state, int x, int y )
 {
-  objects.resize( 0 );
+  if( button == GLUT_LEFT_BUTTON )
+  {
+    if( state == GLUT_DOWN )
+    {
+      lastMousePosition = { x, y };
+    }
+  }
+  std::cout << "Click: [ " << x << ", " << y << " ]" << std::endl;
+}
+
+void CGame::mouseMove( int x, int y )
+{
+  if( lastMousePosition.distance( { x, y } ) > 5 )
+  {
+    m_physicsObjects.emplace_back( (CObject *) new CLine( lastMousePosition, { x, y }, physicsAttributes( HUGE_VAL ) ) );
+    lastMousePosition = { x, y };
+  }
 }

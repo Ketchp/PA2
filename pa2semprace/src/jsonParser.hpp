@@ -39,9 +39,10 @@ class jsonValue
 public:
   explicit jsonValue( jsonType );
   virtual ~jsonValue() = default;
-  virtual jsonValue *clone() const = 0;
-  virtual std::set<std::string> getKeys() const;
-  virtual size_t size() const;
+  [[nodiscard]] virtual jsonValue *clone() const = 0;
+  [[nodiscard]] virtual std::set<std::string> getKeys() const;
+  [[nodiscard]] virtual size_t count( const std::string & ) const;
+  [[nodiscard]] virtual size_t size() const;
   virtual jsonValue &operator[]( const std::string & );
   virtual const jsonValue &operator[]( const std::string & ) const;
   virtual jsonValue &operator[]( size_t );
@@ -62,9 +63,10 @@ class jsonObject : public jsonValue
 {
 public:
   jsonObject();
-  jsonValue *clone() const override;
-  size_t size() const override;
-  std::set<std::string> getKeys() const override;
+  [[nodiscard]] jsonValue *clone() const override;
+  [[nodiscard]] size_t size() const override;
+  [[nodiscard]] std::set<std::string> getKeys() const override;
+  [[nodiscard]] size_t count( const std::string & ) const override;
   jsonValue &operator[]( const std::string &key ) override;
   const jsonValue &operator[]( const std::string &key ) const override;
   explicit operator bool() const override { return !m_object.empty(); };
@@ -78,8 +80,8 @@ class jsonArray : public jsonValue
 {
 public:
   jsonArray();
-  jsonValue *clone() const override;
-  size_t size() const override;
+  [[nodiscard]] jsonValue *clone() const override;
+  [[nodiscard]] size_t size() const override;
   jsonValue &operator[]( size_t ) override;
   const jsonValue &operator[]( size_t ) const override;
   explicit operator bool() const override { return !m_vector.empty(); };
@@ -93,7 +95,7 @@ class jsonString : public jsonValue
 {
 public:
   explicit jsonString( std::string );
-  jsonValue *clone() const override;
+  [[nodiscard]] jsonValue *clone() const override;
   explicit operator std::string() const override { return m_string; }; //todo explicit may be not needed
   explicit operator bool() const override { return !m_string.empty(); };
 private:
@@ -107,7 +109,7 @@ class jsonNumber : public jsonValue
 {
 public:
   explicit jsonNumber( std::string );
-  jsonValue *clone() const override;
+  [[nodiscard]] jsonValue *clone() const override;
   explicit operator int() const override { return std::stoi( m_number ); }; //todo explicit may be not needed
   explicit operator float() const override { return std::stof( m_number ); }; //todo explicit may be not needed
   explicit operator double() const override { return std::stod( m_number ); }; //todo explicit may be not needed
@@ -122,7 +124,7 @@ class jsonBool : public jsonValue
 {
 public:
   explicit jsonBool( bool );
-  jsonValue *clone() const override;
+  [[nodiscard]] jsonValue *clone() const override;
   explicit operator bool() const override { return m_bool; };
 private:
   friend class jsonValue;
@@ -134,7 +136,7 @@ class jsonNull : public jsonValue
 {
 public:
   jsonNull();
-  jsonValue *clone() const override;
+  [[nodiscard]] jsonValue *clone() const override;
   explicit operator bool() const override { return false; };
 private:
   friend class jsonValue;
@@ -149,7 +151,7 @@ public:
   ~JSON();
 
   jsonValue &get() { return *m_top; };
-  const jsonValue &get() const { return *m_top; };
+  [[nodiscard]] const jsonValue &get() const { return *m_top; };
   jsonType m_type;
 private:
   jsonValue *m_top;

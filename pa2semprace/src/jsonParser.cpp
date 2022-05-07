@@ -66,6 +66,11 @@ std::set<std::string> jsonValue::getKeys() const
   throw std::invalid_argument( "Wrong json type for method getKeys." );
 }
 
+size_t jsonValue::count( const std::string & ) const
+{
+  throw std::invalid_argument( "Wrong json type for method count." );
+}
+
 size_t jsonValue::size() const
 {
   throw std::invalid_argument( "Wrong json type for method size." );
@@ -219,6 +224,11 @@ std::set<std::string> jsonObject::getKeys() const
   return keys;
 }
 
+size_t jsonObject::count( const std::string &key ) const
+{
+  return m_object.count( key );
+}
+
 jsonValue &jsonObject::operator[]( const std::string &key )
 {
   return *m_object.at( key );
@@ -282,7 +292,7 @@ jsonValue &jsonArray::operator[]( size_t idx )
 
 const jsonValue &jsonArray::operator[]( size_t idx ) const
 {
-  if( m_vector.size() >= idx )
+  if( m_vector.size() <= idx )
     throw std::invalid_argument( "Idx out of range." );
   return *m_vector[ idx ];
 }

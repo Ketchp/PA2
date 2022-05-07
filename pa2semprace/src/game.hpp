@@ -3,18 +3,39 @@
 #include "physicsEngine.hpp"
 #include <vector>
 #include <memory>
+#include "jsonParser.hpp"
+#include "helpers.hpp"
+#include "cmath"
 
-class game
+class CGame
 {
 public:
-  game();
-  void update();
-  void nextFrame();
+  CGame( int *argcPtr, char *argv[] );
   void mainLoop();
-  void gameEnd();
 private:
-  window m_window;
-//  physicsEngine m_engine;
+  void loadLevel( const std::string &levelFileName );
+  void loadLevelScreen( const jsonObject &screenDescription );
+  static math::vector loadLevelSize( const jsonArray &levelSizeDescription );
+  void loadItems( const jsonArray &itemsDescription );
+  void loadItem( const jsonObject &itemDescription );
+//  static int loadItemId( const jsonObject &itemDescription );
+  static physicsAttributes loadItemPhysics( const jsonObject &itemDescription );
+  static std::string loadItemType( const jsonObject &itemDescription );
+  static math::vector loadItemPosition( const jsonObject &itemDescription );
+  static alphaColor loadItemColor( const jsonObject &itemDescription );
+  static double loadItemSize1D( const jsonObject &itemDescription );
+  static math::vector loadItemSize2D( const jsonObject &itemDescription );
 
-  std::vector<std::unique_ptr<object>> objects;
+  void mouseClick( int button, int state, int x, int y );
+  void mouseMove( int x, int y );
+
+  void redraw();
+  void nextFrame();
+
+
+  math::vector lastMousePosition{ NAN, NAN };
+  CWindow m_window;
+  CPhysicsEngine m_engine;
+  std::vector<std::unique_ptr<CObject>> m_physicsObjects;
+  std::vector<std::unique_ptr<CObject>> m_controlObjects;
 };
