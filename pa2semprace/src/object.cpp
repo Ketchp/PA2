@@ -4,6 +4,13 @@ CObject::CObject( math::vector position, double rotation )
   : m_position( position ), m_rotation( rotation )
 {}
 
+CObject &CObject::rotate( double angle )
+{
+  m_rotation += angle;
+  m_rotation -= (int)( m_rotation / ( 2 * M_PI ) ) * ( 2 * M_PI );
+  return *this;
+}
+
 CPhysicsObject::CPhysicsObject( math::vector position, double rotation, const physicsAttributes &attributes )
   : CObject( position, rotation ),
     m_attributes( attributes )
@@ -21,12 +28,12 @@ CLine::CLine( math::vector pointStart, math::vector pointEnd, const physicsAttri
 
 math::vector CLine::begin() const
 {
-  return m_position - m_direction.rotated( m_rotation );
+  return m_position - m_direction;
 }
 
 math::vector CLine::end() const
 {
-  return m_position + m_direction.rotated( m_rotation );
+  return m_position + m_direction;
 }
 
 void CLine::render() const
@@ -63,10 +70,64 @@ CManifold CLine::getManifold( CObject *other )
 
 CManifold CLine::getManifold( CLine *other )
 {
-  math::matrix overlapEquationMatrix{ begin() - end(),
-                                      other->end() - other->begin() };
+  math::vector collisionPoint = calculateCollisionPoint( begin(), end(),
+                                                         other->begin(), other->end() );
+  if( !collisionPoint )
+    return { nullptr, nullptr, { 0, 0 }, { 0, 0 } };
 
-  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+
+  math::vector aBeginOverlap = ( collisionPoint - begin() ).rejectFrom( other->m_direction );
+  math::vector aEndOverlap = ( collisionPoint - end() ).rejectFrom( other->m_direction );
+  math::vector aSmallestOverlap = aBeginOverlap;
+  math::vector aEndPointOfOverlap = begin();
+  if( aBeginOverlap.norm() > aEndOverlap.norm() )
+  {
+    aSmallestOverlap = aEndOverlap;
+    aEndPointOfOverlap = end();
+  }
+
+  math::vector bBeginOverlap = ( collisionPoint - other->begin() ).rejectFrom( m_direction );
+  math::vector bEndOverlap = ( collisionPoint - other->end() ).rejectFrom( m_direction );
+  math::vector bSmallestOverlap = bBeginOverlap;
+  math::vector bEndPointOfOverlap = other->begin();
+  if( bBeginOverlap.norm() > bEndOverlap.norm() )
+  {
+    bSmallestOverlap = bEndOverlap;
+    bEndPointOfOverlap = other->end();
+  }
+
+  if( aSmallestOverlap.norm() < bSmallestOverlap.norm() )
+    return { other, this, aSmallestOverlap, aEndPointOfOverlap + aSmallestOverlap / 2 };
+  return { this, other, bSmallestOverlap, bEndPointOfOverlap + bSmallestOverlap / 2 };
+}
+
+math::vector CLine::calculateCollisionPoint( math::vector aBegin, math::vector aEnd,
+                                             math::vector bBegin, math::vector bEnd )
+{
+  math::matrix overlapEquationMatrix{ aEnd - aBegin,
+                                      bBegin - bEnd };
+  if( !overlapEquationMatrix.invert() )
+    return { NAN, NAN };
+  math::vector solution = overlapEquationMatrix * ( bBegin - aBegin );
+  return aBegin + solution[ 0 ] * ( aEnd - aBegin );
+}
+
+bool CLine::areColliding( const math::vector &aBegin, const math::vector &aEnd,
+                          const math::vector &bBegin, const math::vector &bEnd )
+{
+  math::matrix overlapEquationMatrix{ aEnd - aBegin,
+                                      bBegin - bEnd };
+  if( !overlapEquationMatrix.invert() )
+    return false;
+  math::vector solution = overlapEquationMatrix * ( bBegin - aBegin );
+  return 0 < solution[ 0 ] && solution[ 0 ] < 1 &&
+         0 < solution[ 1 ] && solution[ 1 ] < 1;
+}
+
+CObject &CLine::rotate( double angle )
+{
+  m_direction = math::matrix::rotationMatrix( angle ) * m_direction;
+  return *this;
 }
 
 GLUquadric *CCircle::gluRenderer = nullptr;
@@ -94,17 +155,71 @@ void CCircle::updateBoundingBox()
 
 CManifold CCircle::getManifold( CObject *other )
 {
-  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+  auto *otherCircle = dynamic_cast<CCircle *>( other );
+  if( otherCircle )
+    return otherCircle->getManifold( this );
+  auto *otherComplex = dynamic_cast<CComplexObject *>( other );
+  if( otherComplex )
+    return otherComplex->getManifold( this );
+  throw std::invalid_argument( "No collision detection for this object." );
 }
 
 CManifold CCircle::getManifold( CLine *other )
 {
-  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+  double projectionScale = other->m_direction.dot( m_position - other->m_position )
+          / other->m_direction.squareNorm();
+  if( -1 < projectionScale && projectionScale < 1 )
+  {
+    math::vector normal = ( m_position - other->m_position ).rejectFrom( other->m_direction );
+    if( normal.squareNorm() > m_size * m_size )
+      return { nullptr, nullptr, { 0, 0 }, { 0, 0 } };
+    return { other, this,
+             normal,
+             m_position - normal / 2 };
+  }
+
+  math::vector relativeBegin = other->begin() - m_position;
+  if( relativeBegin.squareNorm() < m_size * m_size )
+  {
+    double distFromBegin = relativeBegin.norm();
+    math::vector overlapVector = ( ( m_size - distFromBegin ) / distFromBegin ) * relativeBegin;
+    return { this, other,
+             overlapVector,
+             other->begin() + overlapVector / 2
+    };
+  }
+
+  math::vector relativeEnd = other->end() - m_position;
+  if( relativeEnd.squareNorm() < m_size * m_size )
+  {
+    double distFromEnd = relativeEnd.norm();
+    math::vector overlapVector = ( ( m_size - distFromEnd ) / distFromEnd ) * relativeEnd;
+    return { this, other,
+             overlapVector,
+             other->end() + overlapVector / 2
+    };
+  }
+
+  return { this, other,
+           { 0, 0 },
+           { 0, 0 } };
 }
 
 CManifold CCircle::getManifold( CCircle *other )
 {
-  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+  math::vector relativePos = other->m_position - m_position;
+  double relativeDist = relativePos.norm();
+  if( relativeDist > m_size + other->m_size )
+    return { nullptr, nullptr, { 0, 0 }, { 0, 0 } };
+  return { this, other,
+           ( ( m_size + other->m_size - relativeDist ) / relativeDist ) * relativePos,
+           ( ( other->m_size - m_size + relativeDist ) / 2 ) * relativePos + m_position
+  };
+}
+
+CObject &CCircle::rotate( double angle )
+{
+  return *this;
 }
 
 
@@ -143,14 +258,12 @@ void CComplexObject::updateBoundingBox()
          maxY = -HUGE_VAL;
   for( const auto &vertex: m_vertices  )
   {
-    math::vector rotated = vertex.rotated( m_rotation );
-    math::vector plus = m_position + rotated;
-    math::vector minus = m_position - rotated;
-    minX = std::min( std::min( plus[ 0 ], minus[ 0 ] ), minX );
-    maxX = std::max( std::max( plus[ 0 ], minus[ 0 ] ), maxX );
-    minY = std::min( std::min( plus[ 1 ], minus[ 1 ] ), minY );
-    maxY = std::max( std::max( plus[ 1 ], minus[ 1 ] ), maxY );
+    minX = std::min( vertex[ 0 ], minX );
+    maxX = std::max( vertex[ 0 ], maxX );
+    minY = std::min( vertex[ 1 ], minY );
+    maxY = std::max( vertex[ 1 ], maxY );
   }
+  m_BBx = { minX, maxX };
 }
 
 math::vector CComplexObject::calculateCentreOfMass( const std::vector<math::vector> &vertices )
@@ -169,7 +282,10 @@ math::vector CComplexObject::calculateCentreOfMass( const std::vector<math::vect
 
 CManifold CComplexObject::getManifold( CObject *other )
 {
-  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+  auto *otherComplex = dynamic_cast<CComplexObject *>( other );
+  if( otherComplex )
+    return otherComplex->getManifold( this );
+  throw std::invalid_argument( "No collision detection for this object." );
 }
 
 CManifold CComplexObject::getManifold( CLine *other )
@@ -185,5 +301,12 @@ CManifold CComplexObject::getManifold( CCircle *other )
 CManifold CComplexObject::getManifold( CComplexObject *other )
 {
   return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+}
+
+CObject &CComplexObject::rotate( double angle )
+{
+  for( math::vector &vertex: m_vertices )
+    vertex =  math::matrix::rotationMatrix( angle ) * vertex;
+  return *this;
 }
 

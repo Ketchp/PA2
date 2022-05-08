@@ -59,6 +59,10 @@ double vector::operator[]( size_t idx ) const
   return data[ idx ];
 }
 
+vector::operator bool() const
+{
+  return data[ 0 ] != NAN  && data[ 1 ] != NAN;
+}
 
 vector &vector::normalize()
 {
@@ -90,11 +94,25 @@ bool vector::isZero() const
   return data[ 0 ] == 0 && data[ 1 ] == 0;
 }
 
+double vector::dot( const vector &other ) const
+{
+  return data[ 0 ] * other[ 0 ] + data[ 1 ] * other[ 1 ];
+}
+
+vector &vector::rejectFrom( const vector &other )
+{
+  return *this = *this - vector( *this ).projectTo( other );
+}
+
+vector &vector::projectTo( const vector &other )
+{
+  return *this = dot( other ) / other.squareNorm() * other;
+}
+
 
 matrix::matrix( std::initializer_list<vector> inList )
         : data( (vector *)new uint8_t[inList.size() * sizeof( vector )] ),
-          m_width( inList.size() ),
-          m_height( vector::dimension() )
+          m_width( inList.size() )
 {
   auto it = inList.begin();
   for( size_t idx = 0; idx < m_width; ++idx, ++it )
@@ -125,5 +143,21 @@ vector operator*( const matrix &lhs, const vector &rhs )
   return result;
 }
 
+double matrix::determinant() const
+{
+  return data[ 0 ][ 0 ] * data[ 1 ][ 1 ] - data[ 0 ][ 1 ] * data[ 1 ][ 0 ];
+}
+
+bool matrix::invert()
+{
+  double det = determinant();
+  if( equalDoubles( det, 0 ) )
+    return false;
+  std::swap( data[ 0 ][ 0 ], data[ 1 ][ 1 ] );
+  std::swap( data[ 0 ][ 1 ], data[ 1 ][ 0 ] );
+  data[ 0 ] /= det;
+  data[ 1 ] /= det;
+  return true;
+}
 
 }

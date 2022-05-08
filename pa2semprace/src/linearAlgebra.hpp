@@ -1,11 +1,17 @@
 #pragma once
 #include <array>
 #include <cmath>
+#include <cfloat>
 #include <algorithm>
 #include <cstdarg>
 
 namespace math
 {
+
+bool equalDoubles( double a, double b, size_t precision = 1000 )
+{
+  return b - a  < DBL_EPSILON && a - b < DBL_EPSILON;
+}
 
 struct vector
 {
@@ -40,6 +46,8 @@ struct vector
 
   double operator[]( size_t idx ) const;
 
+  explicit operator bool() const;
+
   [[nodiscard]] double norm() const;
 
   [[nodiscard]] double squareNorm() const;
@@ -50,13 +58,19 @@ struct vector
 
   [[nodiscard]] vector rotated( double angle ) const;
 
+  [[nodiscard]] double dot( const vector & ) const;
+
+  vector &rejectFrom( const vector & );
+
+  vector &projectTo( const vector & );
+
   static size_t dimension() { return 2; };
 };
 
 struct matrix
 {
   vector *data;
-  size_t m_width, m_height;
+  size_t m_width;
 
   matrix( std::initializer_list<vector> );
 
@@ -65,6 +79,12 @@ struct matrix
   vector &operator[]( size_t );
 
   const vector &operator[]( size_t ) const;
+
+  [[nodiscard]] double determinant() const;
+
+  bool invert();
+
+  //math::vector solveFor( math::vector ) const;
 
   friend vector operator*( const matrix &, const vector & );
 };

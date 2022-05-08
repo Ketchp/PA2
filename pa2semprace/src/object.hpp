@@ -4,6 +4,7 @@
 #include <string>
 #include "linearAlgebra.hpp"
 #include "helpers.hpp"
+#include "matrix.hpp"
 #include "physicsEngine.hpp"
 #include <vector>
 
@@ -18,8 +19,10 @@ public:
   virtual void updateBoundingBox() = 0;
   virtual CManifold getManifold( CObject * ) = 0;
   math::vector m_position;
-  double m_rotation;
   math::vector m_BBx;
+  virtual CObject &rotate( double angle );
+protected:
+  double m_rotation;
 };
 
 class CPhysicsObject : public CObject
@@ -32,6 +35,7 @@ public:
   void updateBoundingBox() override = 0;
   CManifold getManifold( CObject * ) override = 0;
   physicsAttributes m_attributes;
+  CObject &rotate( double angle ) override = 0;
 };
 
 class CLine : public CPhysicsObject
@@ -42,8 +46,18 @@ public:
   void updateBoundingBox() override;
   CManifold getManifold( CObject * ) override;
   CManifold getManifold( CLine * );
-  math::vector begin() const;
-  math::vector end() const;
+  [[nodiscard]] math::vector begin() const;
+  [[nodiscard]] math::vector end() const;
+  static math::vector calculateCollisionPoint( math::vector,
+                                               math::vector,
+                                               math::vector,
+                                               math::vector );
+  static bool areColliding( const math::vector &,
+                            const math::vector &,
+                            const math::vector &,
+                            const math::vector & );
+
+  CObject &rotate( double angle ) override;
   math::vector m_direction;
 };
 
@@ -56,6 +70,7 @@ public:
   CManifold getManifold( CObject * ) override;
   CManifold getManifold( CLine * );
   CManifold getManifold( CCircle * );
+  CObject &rotate( double angle ) override;
   double m_size;
   static GLUquadric *gluRenderer;
 };
@@ -70,6 +85,7 @@ public:
   CManifold getManifold( CLine * );
   CManifold getManifold( CCircle * );
   CManifold getManifold( CComplexObject * );
+  CObject &rotate( double angle ) override;
   static math::vector calculateCentreOfMass( const std::vector<math::vector> &vertices );
   static CComplexObject makeRectangle( math::vector centre, math::vector size, const physicsAttributes & );
   std::vector<math::vector> m_vertices;

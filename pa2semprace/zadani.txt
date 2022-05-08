@@ -1,1 +1,74 @@
-# Zadani semestralni prace z Progtestu
+Sandbox hra
+
+Programovanie jednoduchej 2D logickej hry.
+
+Hra bude realizovaná ako realistický 2D fyzikálny simulátor. Hráč bude môcť pomocou myši kresliť
+ľubovolný 2D objekt. Úlohou hráča bude splniť určitú podmienku na prejdenie levelu... napríklad
+"lopta sa musí dotknúť zeme" alebo "dostaň loptu do škatule".
+
+Topologia programu:
+
+class CGame:
+    - načítavanie levelu, prechod medzi levelmi
+    - správa objektov( volanie fyzikálneho enginu, volanie vykreslovania )
+    - kontrola splnenie podmienok pre splnenie/nesplnenie(reset) úrovne
+    - spracovanie užívatelského vstupu( klávesnica, mýš )
+
+class CObject:
+    - informácie o pozícii
+    - informácie potrebné pre vykreslovanie
+    - informácie potrebné pre simuláciu fyziky
+    - metody pre detekciu a spracovanie kolízie
+
+class CPhysicsEngine:
+    - riadenie simulacie fyziky
+      generovanie sily -> zmena rychlosti -> zmena pozície/rotacie -> detekcia kolízii O--> END
+                                                      ^                      |
+                                                      |                      V
+                                                       \_____________ vyriešenie kolízii
+class CWindow:
+    - wrapper nad OpenGL a glutom.
+    - registrovanie metod na užívatelský vstup
+    - vykreslovanie grafiky
+
+class math::vector, math::matrix
+    - práca s matematickými vektormi
+    - riešenie geometrických problémov pri detekcii kolizii
+
+class JSON:
+    - json document( jsonValue )
+    - stará sa o uvolnenie pamäti
+
+class jsonValue:
+    - base class pre všetky json typy
+
+Hra bude splňovať následujúce funkcionality:
+    1. Realistický 2D fyzikálny model tuhých telies
+    2. Realistická gravitácia, zrážky telies, hybnosť
+    3. Hráč bude schopný kresliť útvary pomocou ktorých bude plniť podmienku pre prejdenie úrovne
+    4. Možnosť popisu levelu( popis obrazovky,
+                              popis objektov( rozloženie, fyz. vlasnosti ),
+                              popis fyziky( sila gravitacie ),
+                              podmienky pre splnenie úrovne,
+                              podmienky pre nesplnenie úrovne ) pomocou json suboru.
+
+Využitie polymorfyzmu:
+
+class CObject: base class( možnost dediť pre učeli vykreslovania UI )
+    class CPhysicsObject: obsahuje fyzikálne parametre ako mass, velocity
+        class CLine: jednoducha úsečka
+        class CCircle: jednoduchý kruh
+        class CComplex: objekt zložený z väčšieho množstva pospájaných bodov
+
+virtual metódy na vykreslovanie, hľadanie kolízii
+
+
+class jsonValue
+    class jsonObject
+    class jsonArray
+    class jsonString
+    class jsonNumber
+    class jsonBool
+    class jsonNull
+
+virtual metódy na parsovanie, jednoduchý prístup( getKeys, operator[] )
