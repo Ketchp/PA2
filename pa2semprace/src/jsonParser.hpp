@@ -24,7 +24,7 @@ public:
 };
 
 
-enum class jsonType
+enum class EJsonType
 {
   jsonObjectType,
   jsonArrayType,
@@ -34,126 +34,135 @@ enum class jsonType
   jsonNullType
 };
 
-class jsonValue
+class CJsonObject;
+class CJsonArray;
+class CJsonNumber;
+class CJsonString;
+class CJsonBool;
+class CJsonNull;
+
+class CJsonValue
 {
 public:
-  explicit jsonValue( jsonType );
-  virtual ~jsonValue() = default;
-  [[nodiscard]] virtual jsonValue *clone() const = 0;
-  [[nodiscard]] virtual std::set<std::string> getKeys() const;
-  [[nodiscard]] virtual size_t count( const std::string & ) const;
+  explicit CJsonValue( EJsonType );
+  virtual ~CJsonValue() = default;
+  [[nodiscard]] virtual CJsonValue *clone() const = 0;
+  [[nodiscard]] virtual  size_t count( const std::string & ) const;
   [[nodiscard]] virtual size_t size() const;
-  virtual jsonValue &operator[]( const std::string & );
-  virtual const jsonValue &operator[]( const std::string & ) const;
-  virtual jsonValue &operator[]( size_t );
-  virtual const jsonValue &operator[]( size_t ) const;
-  virtual explicit operator std::string() const; //todo explicit may be not needed
-  virtual explicit operator int() const; //todo explicit may be not needed
-  virtual explicit operator float() const; //todo explicit may be not needed
-  virtual explicit operator double() const; //todo explicit may be not needed
+  virtual CJsonValue &operator[]( const std::string & );
+  virtual const CJsonValue &operator[]( const std::string & ) const;
+  virtual CJsonValue &operator[]( size_t );
+  virtual const CJsonValue &operator[]( size_t ) const;
+  [[nodiscard]] const CJsonObject &getObject() const;
+  [[nodiscard]] const CJsonArray &getArray() const;
+  [[nodiscard]] const CJsonString &getJsonString() const;
+  [[nodiscard]] const CJsonNumber &getJsonNumber() const;
+  [[nodiscard]] const CJsonBool &getJsonBool() const;
+  [[nodiscard]] const CJsonNull &getJsonNull() const;
+  [[nodiscard]] virtual const std::string &toString() const;
+  [[nodiscard]]virtual int toInt() const;
+  [[nodiscard]] virtual double toDouble() const;
   virtual explicit operator bool() const;
-  static jsonValue *parseFromString( const std::string &data, size_t &position );
+
+  static CJsonValue *parseFromString( const std::string &data, size_t &position );
   static void parseWhitespace( const std::string &data, size_t &position );
-  jsonType m_type;
+  EJsonType m_type;
 };
 
 
-
-class jsonObject : public jsonValue
+class CJsonObject : public CJsonValue
 {
 public:
-  jsonObject();
-  [[nodiscard]] jsonValue *clone() const override;
-  [[nodiscard]] size_t size() const override;
-  [[nodiscard]] std::set<std::string> getKeys() const override;
+  CJsonObject();
+  [[nodiscard]] CJsonValue *clone() const override;
   [[nodiscard]] size_t count( const std::string & ) const override;
-  jsonValue &operator[]( const std::string &key ) override;
-  const jsonValue &operator[]( const std::string &key ) const override;
-  explicit operator bool() const override { return !m_object.empty(); };
-private:
-  friend class jsonValue;
-  static jsonValue *parseFromString( const std::string &data, size_t &position );
-  std::map<std::string, copy_ptr<jsonValue>> m_object;
-};
-
-class jsonArray : public jsonValue
-{
-public:
-  jsonArray();
-  [[nodiscard]] jsonValue *clone() const override;
   [[nodiscard]] size_t size() const override;
-  jsonValue &operator[]( size_t ) override;
-  const jsonValue &operator[]( size_t ) const override;
-  explicit operator bool() const override { return !m_vector.empty(); };
+  CJsonValue &operator[]( const std::string &key ) override;
+  const CJsonValue &operator[]( const std::string &key ) const override;
+  explicit operator bool() const override;
 private:
-  friend class jsonValue;
-  static jsonValue *parseFromString( const std::string &data, size_t &position );
-  std::vector<copy_ptr<jsonValue>> m_vector;
+  friend class CJsonValue;
+  static CJsonValue *parseFromString( const std::string &data, size_t &position );
+  std::map<std::string, copy_ptr<CJsonValue>> m_object;
 };
 
-class jsonString : public jsonValue
+class CJsonArray : public CJsonValue
 {
 public:
-  explicit jsonString( std::string );
-  [[nodiscard]] jsonValue *clone() const override;
-  explicit operator std::string() const override { return m_string; }; //todo explicit may be not needed
-  explicit operator bool() const override { return !m_string.empty(); };
+  CJsonArray();
+  [[nodiscard]] CJsonValue *clone() const override;
+  [[nodiscard]] size_t size() const override;
+  CJsonValue &operator[]( size_t ) override;
+  const CJsonValue &operator[]( size_t ) const override;
+  explicit operator bool() const override;
 private:
-  friend class jsonValue;
-  friend class jsonObject;
-  static jsonValue *parseFromString( const std::string &data, size_t &position );
+  friend class CJsonValue;
+  static CJsonValue *parseFromString( const std::string &data, size_t &position );
+  std::vector<copy_ptr<CJsonValue>> m_vector;
+};
+
+class CJsonString : public CJsonValue
+{
+public:
+  explicit CJsonString( std::string );
+  [[nodiscard]] CJsonValue *clone() const override;
+  [[nodiscard]] const std::string &toString() const override;
+  [[nodiscard]] explicit operator bool() const override;
+private:
+  friend class CJsonValue;
+  friend class CJsonObject;
+  static CJsonValue *parseFromString( const std::string &data, size_t &position );
   std::string m_string;
 };
 
-class jsonNumber : public jsonValue
+class CJsonNumber : public CJsonValue
 {
 public:
-  explicit jsonNumber( std::string );
-  [[nodiscard]] jsonValue *clone() const override;
-  explicit operator int() const override { return std::stoi( m_number ); }; //todo explicit may be not needed
-  explicit operator float() const override { return std::stof( m_number ); }; //todo explicit may be not needed
-  explicit operator double() const override { return std::stod( m_number ); }; //todo explicit may be not needed
-  explicit operator bool() const override { return std::stoi( m_number ); };
+  explicit CJsonNumber( std::string );
+  [[nodiscard]] CJsonValue *clone() const override;
+  [[nodiscard]] int toInt() const override;
+  [[nodiscard]] double toDouble() const override;
+  [[nodiscard]] explicit operator bool() const override;
 private:
-  friend class jsonValue;
-  static jsonValue *parseFromString( const std::string &data, size_t &position );
+  friend class CJsonValue;
+  static CJsonValue *parseFromString( const std::string &data, size_t &position );
   std::string m_number;
 };
 
-class jsonBool : public jsonValue
+class CJsonBool : public CJsonValue
 {
 public:
-  explicit jsonBool( bool );
-  [[nodiscard]] jsonValue *clone() const override;
+  explicit CJsonBool( bool );
+  [[nodiscard]] CJsonValue *clone() const override;
   explicit operator bool() const override { return m_bool; };
 private:
-  friend class jsonValue;
-  static jsonValue *parseFromString( const std::string &data, size_t &position );
+  friend class CJsonValue;
+  static CJsonValue *parseFromString( const std::string &data, size_t &position );
   bool m_bool;
 };
 
-class jsonNull : public jsonValue
+class CJsonNull : public CJsonValue
 {
 public:
-  jsonNull();
-  [[nodiscard]] jsonValue *clone() const override;
+  CJsonNull();
+  [[nodiscard]] CJsonValue *clone() const override;
   explicit operator bool() const override { return false; };
 private:
-  friend class jsonValue;
-  static jsonValue *parseFromString( const std::string &data, size_t &position );
+  friend class CJsonValue;
+  static CJsonValue *parseFromString( const std::string &data, size_t &position );
 };
 
 
-class JSON
+class CJsonDocument
 {
 public:
-  explicit JSON( const std::string &fileName );
-  ~JSON();
+  explicit CJsonDocument( const std::string &fileName );
+  ~CJsonDocument();
 
-  jsonValue &get() { return *m_top; };
-  [[nodiscard]] const jsonValue &get() const { return *m_top; };
-  jsonType m_type;
+  CJsonValue &get() { return *m_top; };
+  [[nodiscard]] const CJsonValue &get() const { return *m_top; };
+  EJsonType m_type;
 private:
-  jsonValue *m_top;
+  CJsonValue *m_top;
 };
 

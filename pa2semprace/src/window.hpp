@@ -1,14 +1,14 @@
 #pragma once
-#include <GL/freeglut.h>
 #include "object.hpp"
 #include "helpers.hpp"
+#include <GL/freeglut.h>
 #include <list>
 #include <vector>
 #include <functional>
 #include <map>
 #include <utility>
 #include <memory>
-#include "cassert"
+#include <cassert>
 
 class CWindow
 {
@@ -40,7 +40,7 @@ public:
   {
     keyPressEventCallback = [cl, callback, this]( unsigned char key, int x, int y )
             {
-              math::vector relativeCoord = resolveCoordinates( x, y );
+              TVector<2> relativeCoord = resolveCoordinates( x, y );
               (cl->*callback)( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
             };
     glutKeyboardFunc( &CWindow::keyPressEventHandler );
@@ -52,7 +52,7 @@ public:
   {
     keyReleaseEventCallback = [cl, callback, this]( unsigned char key, int x, int y )
             {
-              math::vector relativeCoord = resolveCoordinates( x, y );
+              TVector<2> relativeCoord = resolveCoordinates( x, y );
               (cl->*callback)( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
             };
     glutKeyboardUpFunc( &CWindow::keyReleaseEventHandler );
@@ -64,7 +64,7 @@ public:
   {
     specialKeyPressEventCallback = [cl, callback, this]( int key, int x, int y )
             {
-              math::vector relativeCoord = resolveCoordinates( x, y );
+              TVector<2> relativeCoord = resolveCoordinates( x, y );
               (cl->*callback)( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
             };
     glutSpecialFunc( &CWindow::specialKeyPressEventHandler );
@@ -76,7 +76,7 @@ public:
   {
     specialKeyReleaseEventCallback = [cl, callback, this]( int key, int x, int y )
             {
-              math::vector relativeCoord = resolveCoordinates( x, y );
+              TVector<2> relativeCoord = resolveCoordinates( x, y );
               (cl->*callback)( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
             };
     glutSpecialUpFunc( &CWindow::specialKeyReleaseEventHandler );
@@ -88,7 +88,7 @@ public:
   {
     mouseButtonEventCallback = [cl, callback, this]( int button, int state, int x, int y )
             {
-              math::vector relativeCoord = resolveCoordinates( x, y );
+              TVector<2> relativeCoord = resolveCoordinates( x, y );
               (cl->*callback)( button, state, relativeCoord[ 0 ], relativeCoord[ 1 ] );
             };
     glutMouseFunc( &CWindow::mouseButtonEventHandler );
@@ -100,7 +100,7 @@ public:
   {
     mouseMotionEventCallback = [cl, callback, this]( int x, int y )
             {
-              math::vector relativeCoord = resolveCoordinates( x, y );
+              TVector<2> relativeCoord = resolveCoordinates( x, y );
               (cl->*callback)( relativeCoord[ 0 ], relativeCoord[ 1 ] );
             };
     glutMotionFunc( &CWindow::mouseMotionEventHandler );
@@ -115,21 +115,21 @@ public:
     return 0;
   }
 
-  void drawItems( const std::vector<std::unique_ptr<CObject>> &itemVector ) const;
+  void drawItems( const std::vector<CObject *> &itemVector ) const;
 
   void resizeView( double left,
                    double right,
                    double bottom,
                    double top );
 
-  math::vector getViewSize() const;
+  TVector<2> getViewSize() const;
 
   void mainLoop() const;
   int m_windowID;
 private:
-  math::vector m_viewOrigin;
-  math::vector m_viewExtreme;
-  math::vector m_windowSize;
+  TVector<2> m_viewOrigin;
+  TVector<2> m_viewExtreme;
+  TVector<2> m_windowSize;
   static void redrawEventHandler();
   static void timerEventHandler( int );
   static void resizeEventHandler( int, int );
@@ -142,7 +142,7 @@ private:
   static void windowCloseEventHandler();
 
   void resizeWindowAction( int w, int h );
-  math::vector resolveCoordinates( int x, int y ) const;
+  TVector<2> resolveCoordinates( int x, int y ) const;
 
   std::function<void()> redrawEventCallback;
   std::map< int, std::function<void()> > timerEventCallbacks;

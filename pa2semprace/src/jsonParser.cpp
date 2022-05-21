@@ -1,174 +1,195 @@
 #include "jsonParser.hpp"
 
-jsonValue::jsonValue( jsonType type )
+using namespace std;
+
+CJsonValue::CJsonValue( EJsonType type )
   : m_type( type )
 {}
 
-jsonObject::jsonObject()
-  : jsonValue( jsonType::jsonObjectType )
+CJsonObject::CJsonObject()
+  : CJsonValue( EJsonType::jsonObjectType )
 {}
 
-jsonArray::jsonArray()
-  : jsonValue( jsonType::jsonArrayType )
+CJsonArray::CJsonArray()
+  : CJsonValue( EJsonType::jsonArrayType )
 {}
 
-jsonString::jsonString( std::string value )
-  : jsonValue( jsonType::jsonStringType ),
+CJsonString::CJsonString( string value )
+  : CJsonValue( EJsonType::jsonStringType ),
     m_string( move( value ) )
 {}
 
-jsonNumber::jsonNumber( std::string number )
-  : jsonValue( jsonType::jsonNumberType ),
+CJsonNumber::CJsonNumber( string number )
+  : CJsonValue( EJsonType::jsonNumberType ),
     m_number( move( number ) )
 {}
 
-jsonBool::jsonBool( bool value )
-  : jsonValue( jsonType::jsonBoolType ),
+CJsonBool::CJsonBool( bool value )
+  : CJsonValue( EJsonType::jsonBoolType ),
     m_bool( value )
 {}
 
-jsonNull::jsonNull()
-  : jsonValue( jsonType::jsonNullType )
+CJsonNull::CJsonNull()
+  : CJsonValue( EJsonType::jsonNullType )
 {}
 
-jsonValue *jsonObject::clone() const
+CJsonValue *CJsonObject::clone() const
 {
-  return new jsonObject( *this );
+  return new CJsonObject( *this );
 }
 
-jsonValue *jsonArray::clone() const
+CJsonValue *CJsonArray::clone() const
 {
-  return new jsonArray( *this );
+  return new CJsonArray( *this );
 }
 
-jsonValue *jsonString::clone() const
+CJsonValue *CJsonString::clone() const
 {
-  return new jsonString( *this );
+  return new CJsonString( *this );
 }
 
-jsonValue *jsonNumber::clone() const
+CJsonValue *CJsonNumber::clone() const
 {
-  return new jsonNumber( *this );
+  return new CJsonNumber( *this );
 }
 
-jsonValue *jsonBool::clone() const
+CJsonValue *CJsonBool::clone() const
 {
-  return new jsonBool( *this );
+  return new CJsonBool( *this );
 }
 
-jsonValue *jsonNull::clone() const
+CJsonValue *CJsonNull::clone() const
 {
-  return new jsonNull( *this );
+  return new CJsonNull( *this );
 }
 
-std::set<std::string> jsonValue::getKeys() const
+const CJsonObject &CJsonValue::getObject() const
 {
-  throw std::invalid_argument( "Wrong json type for method getKeys." );
+  return dynamic_cast<const CJsonObject &>( *this );
 }
 
-size_t jsonValue::count( const std::string & ) const
+const CJsonArray &CJsonValue::getArray() const
 {
-  throw std::invalid_argument( "Wrong json type for method count." );
+  return dynamic_cast<const CJsonArray &>( *this );
 }
 
-size_t jsonValue::size() const
+const CJsonString &CJsonValue::getJsonString() const
 {
-  throw std::invalid_argument( "Wrong json type for method size." );
+  return dynamic_cast<const CJsonString &>( *this );
 }
 
-jsonValue &jsonValue::operator[]( const std::string & )
+const CJsonNumber &CJsonValue::getJsonNumber() const
 {
-  throw std::invalid_argument( "Wrong json type for operator[ const std::string & ]." );
+  return dynamic_cast<const CJsonNumber &>( *this );
 }
 
-const jsonValue &jsonValue::operator[]( const std::string & ) const
+const CJsonBool &CJsonValue::getJsonBool() const
 {
-  throw std::invalid_argument( "Wrong json type for operator[ const std::string & ]." );
+  return dynamic_cast<const CJsonBool &>( *this );
 }
 
-jsonValue &jsonValue::operator[]( size_t )
+const CJsonNull &CJsonValue::getJsonNull() const
 {
-  throw std::invalid_argument( "Wrong json type for operator[ size_t ]." );
+  return dynamic_cast<const CJsonNull &>( *this );
 }
 
-const jsonValue &jsonValue::operator[]( size_t ) const
+const string &CJsonValue::toString() const
 {
-  throw std::invalid_argument( "Wrong json type for operator[ size_t ]." );
+  throw invalid_argument( "Wrong type." );
 }
 
-jsonValue::operator std::string() const
+int CJsonValue::toInt() const
 {
-  throw std::invalid_argument( "Invalid json type for string cast." );
+  throw invalid_argument( "Wrong type." );
 }
 
-jsonValue::operator int() const
+double CJsonValue::toDouble() const
 {
-  throw std::invalid_argument( "Invalid json type for int cast." );
+  throw invalid_argument( "Wrong type." );
 }
 
-jsonValue::operator float() const
+size_t CJsonValue::count( const string & ) const
 {
-  throw std::invalid_argument( "Invalid json type for float cast." );
+  throw invalid_argument( "Wrong json type for method count." );
 }
 
-jsonValue::operator double() const
+size_t CJsonValue::size() const
 {
-  throw std::invalid_argument( "Invalid json type for double cast." );
+  throw invalid_argument( "Wrong json type for method size." );
 }
 
-jsonValue::operator bool() const
+CJsonValue &CJsonValue::operator[]( const string & )
 {
-  throw std::invalid_argument( "Invalid json type for bool cast." );
+  throw invalid_argument( "Wrong json type for operator[ const std::string & ]." );
+}
+
+const CJsonValue &CJsonValue::operator[]( const string & ) const
+{
+  throw invalid_argument( "Wrong json type for operator[ const std::string & ]." );
+}
+
+CJsonValue &CJsonValue::operator[]( size_t )
+{
+  throw invalid_argument( "Wrong json type for operator[ size_t ]." );
+}
+
+const CJsonValue &CJsonValue::operator[]( size_t ) const
+{
+  throw invalid_argument( "Wrong json type for operator[ size_t ]." );
+}
+
+CJsonValue::operator bool() const
+{
+  throw invalid_argument( "Invalid json type for bool cast." );
 }
 
 
-jsonValue *jsonValue::parseFromString( const std::string &data, size_t &position )
+CJsonValue *CJsonValue::parseFromString( const string &data, size_t &position )
 {
   parseWhitespace( data, position );
   if( data.size() == position )
-    throw std::invalid_argument( "Expected JSON value but got nothing." );
-  jsonValue *parsedValue;
+    throw invalid_argument( "Expected JSON value but got nothing." );
+  CJsonValue *parsedValue;
   if( data[ position ] == '{' )
-    parsedValue = jsonObject::parseFromString( data, position );
+    parsedValue = CJsonObject::parseFromString( data, position );
 
   else if( data[ position ] == '[' )
-    parsedValue = jsonArray::parseFromString( data, position );
+    parsedValue = CJsonArray::parseFromString( data, position );
 
   else if( data[ position ] == '"' )
-    parsedValue = jsonString::parseFromString( data, position );
+    parsedValue = CJsonString::parseFromString( data, position );
 
   else if( data[ position ] == '-' || ( '0' <= data[ position ] && data[ position ] <= '9' ) )
-    parsedValue = jsonNumber::parseFromString( data, position );
+    parsedValue = CJsonNumber::parseFromString( data, position );
 
   else if( data[ position ] == 't' || data[ position ] == 'f' )
-    parsedValue = jsonBool::parseFromString( data, position );
+    parsedValue = CJsonBool::parseFromString( data, position );
 
   else if( data[ position ] == 'n' )
-    parsedValue = jsonNull::parseFromString( data, position );
+    parsedValue = CJsonNull::parseFromString( data, position );
   else
-    throw std::invalid_argument( "Expected json value at position " +
-                                  std::to_string( position ) );
+    throw invalid_argument( "Expected json value at position " + to_string( position ) );
+
   parseWhitespace( data, position );
   return parsedValue;
 }
 
-void jsonValue::parseWhitespace( const std::string &data, size_t &position )
+void CJsonValue::parseWhitespace( const string &data, size_t &position )
 {
   while( position < data.size() && isspace( data[ position ] ) )
     ++position;
 }
 
-jsonValue *jsonObject::parseFromString( const std::string &data, size_t &position )
+CJsonValue *CJsonObject::parseFromString( const string &data, size_t &position )
 {
-  jsonObject *parsedObject = new jsonObject;
+  CJsonObject *parsedObject = new CJsonObject;
   if( data[ position ] != '{' )
-    throw std::invalid_argument( "Expected '{' at position " +
-                                  std::to_string( position ) );
+    throw invalid_argument( "Expected '{' at position " + to_string( position ) );
   ++position; // '{'
 
   parseWhitespace( data, position );
   if( data.size() == position )
-    throw std::invalid_argument( "Expected '}' or string at end of file." );
+    throw invalid_argument( "Expected '}' or string at end of file." );
 
   if( data[ position ] == '}' )
   {
@@ -180,76 +201,70 @@ jsonValue *jsonObject::parseFromString( const std::string &data, size_t &positio
   {
     parseWhitespace( data, position );
     if( data.size() == position )
-      throw std::invalid_argument( "Expected string at the end of file." );
+      throw invalid_argument( "Expected string at the end of file." );
 
-    jsonValue *parsedString = jsonString::parseFromString( data, position );
-    std::string key = (std::string)dynamic_cast<jsonString &>( *parsedString );
+    CJsonValue *parsedString = CJsonString::parseFromString( data, position );
+    string key = move( parsedString->toString() );
     delete parsedString;
 
     parseWhitespace( data, position );
     if( position == data.size() || data[ position ] != ':' )
-      throw std::invalid_argument( "Expected ':' at position " +
-                                    std::to_string( position ) );
+      throw invalid_argument( "Expected ':' at position " + to_string( position ) );
     ++position; // ':'
 
-    jsonValue *parsedValue = jsonValue::parseFromString( data, position );
+    CJsonValue *parsedValue = CJsonValue::parseFromString( data, position );
     parsedObject->m_object.emplace( key, parsedValue );
 
     if( data.size() == position )
-      throw std::invalid_argument( "Expected ',' or '}' at the end of file." );
+      throw invalid_argument( "Expected ',' or '}' at the end of file." );
 
     if( data[ position ] == '}' )
       break;
     if( data[ position ] != ',' )
-      throw std::invalid_argument( "Unexpected character " +
-                                    std::to_string( data[ position ] ) +
-                                   " at position: " +
-                                    std::to_string( position ) );
+      throw invalid_argument( "Unexpected character " + to_string( data[ position ] ) +
+                                   " at position: " + to_string( position ) );
     ++position;
   }
   ++position;
   return parsedObject;
 }
 
-size_t jsonObject::size() const
+size_t CJsonObject::size() const
 {
   return m_object.size();
 }
 
-std::set<std::string> jsonObject::getKeys() const
-{
-  std::set<std::string> keys;
-  for( const auto &[ key, _ ]: m_object )
-    keys.emplace( key );
-  return keys;
-}
-
-size_t jsonObject::count( const std::string &key ) const
+size_t CJsonObject::count( const string &key ) const
 {
   return m_object.count( key );
 }
 
-jsonValue &jsonObject::operator[]( const std::string &key )
+CJsonValue &CJsonObject::operator[]( const string &key )
 {
   return *m_object.at( key );
 }
 
-const jsonValue &jsonObject::operator[]( const std::string &key ) const
+const CJsonValue &CJsonObject::operator[]( const string &key ) const
 {
   return *m_object.at( key );
 }
 
-jsonValue *jsonArray::parseFromString( const std::string &data, size_t &position )
+CJsonObject::operator bool() const
 {
-  jsonArray *parsedArray = new jsonArray;
+  return !m_object.empty();
+}
+
+
+CJsonValue *CJsonArray::parseFromString( const string &data, size_t &position )
+{
+  CJsonArray *parsedArray = new CJsonArray;
   if( data[ position ] != '[' )
-    throw std::invalid_argument( "Expected '[' at position " +
-                                 std::to_string( position ) );
+    throw invalid_argument( "Expected '[' at position " + to_string( position ) );
   ++position; // '['
 
   parseWhitespace( data, position );
   if( data.size() == position )
-    throw std::invalid_argument( "Expected ']' or value at end of file." );
+    throw invalid_argument( "Expected ']' or value at end of file." );
 
   if( data[ position ] == ']' )
   {
@@ -259,57 +274,59 @@ jsonValue *jsonArray::parseFromString( const std::string &data, size_t &position
 
   while( true )
   {
-    jsonValue *parsedValue = jsonValue::parseFromString( data, position );
+    CJsonValue *parsedValue = CJsonValue::parseFromString( data, position );
     parsedArray->m_vector.emplace_back( parsedValue );
 
     if( data.size() == position )
-      throw std::invalid_argument( "Expected ',' or ']' at the end of file." );
+      throw invalid_argument( "Expected ',' or ']' at the end of file." );
 
     if( data[ position ] == ']' )
       break;
     if( data[ position ] != ',' )
-      throw std::invalid_argument( "Unexpected character " +
-                                   std::to_string( data[ position ] ) +
-                                   " at position: " +
-                                   std::to_string( position ) );
+      throw invalid_argument( "Unexpected character " + to_string( data[ position ] ) +
+                                   " at position: " + to_string( position ) );
     ++position;
   }
   ++position;
   return parsedArray;
 }
 
-size_t jsonArray::size() const
+size_t CJsonArray::size() const
 {
   return m_vector.size();
 }
 
-jsonValue &jsonArray::operator[]( size_t idx )
+CJsonValue &CJsonArray::operator[]( size_t idx )
 {
   if( m_vector.size() <= idx )
-    throw std::invalid_argument( "Idx out of range." );
+    throw invalid_argument( "Idx out of range." );
   return *m_vector[ idx ];
 }
 
-const jsonValue &jsonArray::operator[]( size_t idx ) const
+const CJsonValue &CJsonArray::operator[]( size_t idx ) const
 {
   if( m_vector.size() <= idx )
-    throw std::invalid_argument( "Idx out of range." );
+    throw invalid_argument( "Idx out of range." );
   return *m_vector[ idx ];
 }
 
-jsonValue *jsonString::parseFromString( const std::string &data, size_t &position )
+CJsonArray::operator bool() const
+{
+  return !m_vector.empty();
+}
+
+CJsonValue *CJsonString::parseFromString( const string &data, size_t &position )
 {
   if( data[ position ] != '"' )
-    throw std::invalid_argument( "Expected '\"' at position " +
-                                 std::to_string( position ) );
+    throw invalid_argument( "Expected '\"' at position " +
+                                 to_string( position ) );
   ++position; // '"'
 
-  std::string value;
+  string value;
   while( data.size() > position && data[ position ] != '"' )
   {
     if( iscntrl( data[ position ] ) )
-      throw std::invalid_argument( "Control character inside string at position: " +
-                                    std::to_string( position ) );
+      throw invalid_argument( "Control character inside string at position: " + to_string( position ) );
     if( data[ position ] != '\\' )
     {
       value += data[ position ];
@@ -319,7 +336,7 @@ jsonValue *jsonString::parseFromString( const std::string &data, size_t &positio
 
     ++position; // '\\'
     if( data.size() == position )
-      throw std::invalid_argument( "Expected character after \\." );
+      throw invalid_argument( "Expected character after \\." );
     switch( data[ position ] )
     {
     case '"':
@@ -343,119 +360,139 @@ jsonValue *jsonString::parseFromString( const std::string &data, size_t &positio
       value += '\t';
       break;
     case 'u':
-      throw std::invalid_argument( "You are welcome to implement UTF-8." );
+      throw invalid_argument( "You are welcome to implement UTF-8." );
     default:
-      throw std::invalid_argument( "Unexpected escape character after \\." );
+      throw invalid_argument( "Unexpected escape character after \\." );
     }
     ++position;
   }
 
   if( data.size() == position || data[ position ] != '"' )
-    throw std::invalid_argument( "Expected '\"' at position " +
-                                 std::to_string( position ) );
+    throw invalid_argument( "Expected '\"' at position " + to_string( position ) );
   ++position; // '"'
 
-  return new jsonString( value );
+  return new CJsonString( value );
 }
 
-jsonValue *jsonNumber::parseFromString( const std::string &data, size_t &position )
+const std::string &CJsonString::toString() const
 {
-  std::string number;
+  return m_string;
+}
+
+CJsonString::operator bool() const
+{
+  return !m_string.empty();
+}
+
+
+CJsonValue *CJsonNumber::parseFromString( const string &data, size_t &position )
+{
+  string number;
   if( data[ position ] == '-' )
   {
     number += '-';
     position++;
   }
   if( data.size() == position )
-    throw std::invalid_argument( "Expected number at position " +
-                                  std::to_string( position ) );
+    throw invalid_argument( "Expected number at position " + to_string( position ) );
   if( data[ position ] == '0' )
     number += data[ position++ ];
   else if( '1' <= data[ position ] && data[ position ] <= '9' )
     while( data.size() != position && '0' <= data[ position ] && data[ position ] <= '9' )
       number += data[ position++ ];
   else
-    throw std::invalid_argument( "Expected number at position " +
-                                 std::to_string( position ) );
+    throw invalid_argument( "Expected number at position " + to_string( position ) );
 
   if( data.size() == position )
-    return new jsonNumber( number );
+    return new CJsonNumber( number );
 
   if( data[ position ] == '.' )
     do number += data[ position++ ];
     while( data.size() != position && '0' <= data[ position ] && data[ position ] <= '9' );
 
   if( data.size() == position )
-    return new jsonNumber( number );
+    return new CJsonNumber( number );
 
   if( data[ position ] == 'e' || data[ position ] == 'E' )
   {
     number += data[ position++ ];
     if( data.size() == position )
-      throw std::invalid_argument( "Expected number after E/e at position " +
-                                   std::to_string( position ) );
+      throw invalid_argument( "Expected number after E/e at position " + to_string( position ) );
     if( data[ position ] == '+' || data[ position ] == '-' )
       number += data[ position++ ];
     if( data.size() == position )
-      throw std::invalid_argument( "Expected number after E/e at position " +
-                                   std::to_string( position ) );
+      throw invalid_argument( "Expected number after E/e at position " + to_string( position ) );
     while( data.size() != position && '0' <= data[ position ] && data[ position ] <= '9' )
       number += data[ position++ ];
   }
-  return new jsonNumber( number );
+  return new CJsonNumber( number );
 }
 
-jsonValue *jsonBool::parseFromString( const std::string &data, size_t &position )
+int CJsonNumber::toInt() const
+{
+  return stoi( m_number );
+}
+
+double CJsonNumber::toDouble() const
+{
+  return stod( m_number );
+}
+
+CJsonNumber::operator bool() const
+{
+  return stod( m_number ) != 0;
+}
+
+
+CJsonValue *CJsonBool::parseFromString( const string &data, size_t &position )
 {
   if( data.size() >= position + 4 &&
       data[ position ] == 't' &&
       data[ position + 1 ] == 'r' &&
       data[ position + 2 ] == 'u' &&
       data[ position + 3 ] == 'e' )
-    return new jsonBool( true );
+    return new CJsonBool( true );
   else if( data.size() >= position + 5 &&
            data[ position ] == 'f' &&
            data[ position + 1 ] == 'a' &&
            data[ position + 2 ] == 'l' &&
            data[ position + 3 ] == 's' &&
            data[ position + 4 ] == 'e' )
-    return new jsonBool( false );
+    return new CJsonBool( false );
   else
-    throw std::invalid_argument( "Unexpected character in boolean value at position " +
-                                  std::to_string( position ) );
+    throw invalid_argument( "Unexpected character in boolean value at position " + to_string( position ) );
 }
 
-jsonValue *jsonNull::parseFromString( const std::string &data, size_t &position )
+CJsonValue *CJsonNull::parseFromString( const string &data, size_t &position )
 {
   if( data.size() >= position + 4 &&
       data[ position ] == 'n' &&
       data[ position + 1 ] == 'u' &&
       data[ position + 2 ] == 'u' &&
       data[ position + 3 ] == 'l' )
-    return new jsonNull();
+    return new CJsonNull();
   else
-    throw std::invalid_argument( "Unexpected character in null value at position " +
-                                 std::to_string( position ) );
+    throw invalid_argument( "Unexpected character in null value at position " + to_string( position ) );
 }
 
-JSON::JSON( const std::string &fileName )
+CJsonDocument::CJsonDocument( const string &fileName )
 {
-  std::ifstream file( fileName );
+  ifstream file( fileName );
   if( !file.good() )
-    throw std::invalid_argument( "File " + fileName + " could not be opened." );
+    throw invalid_argument( "File " + fileName + " could not be opened." );
   size_t position = 0;
-  m_top = jsonValue::parseFromString( std::string( std::istreambuf_iterator<char>(file),
-                                                   std::istreambuf_iterator<char>() ),
-                                      position );
+  m_top = CJsonValue::parseFromString( string( istreambuf_iterator<char>(file),
+                                               istreambuf_iterator<char>() ),
+                                       position );
   m_type = m_top->m_type;
-  file.seekg( 0, std::ios::end );
+  file.seekg( 0, ios::end );
   if( position == (size_t)file.tellg() )
     return;
   delete m_top;
-  throw std::invalid_argument( "Expected end of file." );
+  throw invalid_argument( "Expected end of file." );
 }
 
-JSON::~JSON()
+CJsonDocument::~CJsonDocument()
 {
   delete m_top;
 }

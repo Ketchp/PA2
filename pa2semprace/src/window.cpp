@@ -1,8 +1,6 @@
 #include "window.hpp"
-#ifdef __DEBUG
-#include <iostream>
-#include <cstdio>
-#endif
+
+using namespace std;
 
 CWindow::CWindow( int *argcPtr, char *argv[] )
 {
@@ -98,7 +96,7 @@ void CWindow::windowCloseEventHandler()
 
 void CWindow::resizeWindowAction( int w, int h )
 {
-  m_windowSize = math::vector{ w, h };
+  m_windowSize = { (double)w, (double)h };
   double viewWidth = m_viewExtreme[ 0 ] - m_viewOrigin[ 0 ];
   double viewHeight = m_viewExtreme[ 1 ] - m_viewOrigin[ 1 ];
 
@@ -134,7 +132,7 @@ void CWindow::resizeWindowAction( int w, int h )
   glMatrixMode( GL_MODELVIEW );
 }
 
-void CWindow::drawItems( const std::vector<std::unique_ptr<CObject>> &itemVector ) const
+void CWindow::drawItems( const vector<CObject *> &itemVector ) const
 {
   // Clear Color and Depth Buffers
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -156,7 +154,7 @@ void CWindow::resizeView( double left, double right, double bottom, double top )
   gluOrtho2D( left, right, bottom, top );
 }
 
-math::vector CWindow::resolveCoordinates( int x, int y ) const
+TVector<2> CWindow::resolveCoordinates( int x, int y ) const
 {
   double viewWidth = m_viewExtreme[ 0 ] - m_viewOrigin[ 0 ];
   double viewHeight = m_viewExtreme[ 1 ] - m_viewOrigin[ 1 ];
@@ -166,7 +164,7 @@ math::vector CWindow::resolveCoordinates( int x, int y ) const
 
   double commonScale = std::min( widthScale, heightScale );
 
-  math::vector coords( x, y );
+  TVector<2> coords{ (double)x, (double)y };
   coords -= m_windowSize / 2;
 
   coords /= commonScale;
@@ -178,7 +176,7 @@ math::vector CWindow::resolveCoordinates( int x, int y ) const
   return coords;
 }
 
-math::vector CWindow::getViewSize() const
+TVector<2> CWindow::getViewSize() const
 {
   return m_viewExtreme - m_viewOrigin;
 }

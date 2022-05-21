@@ -1,16 +1,15 @@
 #pragma once
 #include "linearAlgebra.hpp"
 #include "physicsAttributes.hpp"
-#include "object.hpp"
 #include <vector>
 #include <memory>
 #include <functional>
 #include <queue>
-
+#include <numeric>
+#include <set>
 
 class CObject;
 class CPhysicsObject;
-
 class CForceField
 {
 public:
@@ -20,41 +19,46 @@ public:
   std::function<void(CPhysicsObject &)> m_fieldFunctor;
 };
 
-struct CManifold
+struct TContactPoint
 {
-  CManifold( CObject *first, CObject *second )
-          : first( first ),
-            second( second )
-  {}
+  TVector<2> overlapVector; // distance needed to push second object
+  TVector<2> contactPoint;
+};
 
-  CManifold( CObject *first, CObject *second,
-             math::vector overlapVector,
-             math::vector contactPoint )
-    : first( first ),
-      second( second ),
-      overlapVector( overlapVector ),
-      contactPoint( contactPoint )
-  {}
-  CObject *first;
-  CObject *second;
-  math::vector overlapVector;
-  math::vector contactPoint;
+struct TManifold
+{
+  TManifold( CObject *first, CObject *second );
+
+  TManifold( CObject *first, CObject *second,
+             TVector<2> overlapVector,
+             TVector<2> contactPoint );
+
+  bool isValid() const
+  {
+    return first && second;
+  }
+
+  CPhysicsObject *first;
+  CPhysicsObject *second;
+  std::vector<TContactPoint> contacts;
 };
 
 class CPhysicsEngine
 {
 public:
-  void step( std::vector<std::unique_ptr<CObject>> & );
+  void step( std::vector<CObject *> & );
   void addField( CForceField );
+  void registerCollisionCallback( const std::function<void(std::vector<TManifold>)> &callback )
+  {
+    m_collisionCallback = callback;
+  }
 private:
-  std::vector<CManifold> getCollisions( const CObject &,
-                                        std::vector<std::unique_ptr<CObject>>::const_iterator,
-                                        std::vector<std::unique_ptr<CObject>>::const_iterator );
-  std::vector<std::pair<CObject *, CObject *>> getPossibleCollisions( std::vector<std::unique_ptr<CObject>> & ) const;
-  void updateObjectsOrder( const std::vector<std::unique_ptr<CObject>> & );
-  static std::vector<CManifold> calculateDepths( const std::vector<std::pair<CObject *, CObject *>> & );
-  static CManifold calculateDepth( const std::pair<CObject *, CObject *> & );
+  void accumulateForces( std::vector<CObject *> & );
+  static void applyForces( std::vector<CObject *> & );
+  static std::vector<TManifold> findCollisions( std::vector<CObject *> & );
+  static void resolveCollisions( std::vector<TManifold> & );
+  static void applyImpulses( std::vector<TManifold> & );
+
   std::vector<CForceField> m_fields;
-  std::vector<size_t> m_objectsOrderMinX;
-  std::vector<size_t> m_objectsOrderMaxX;
+  std::function<void(std::vector<TManifold>)> m_collisionCallback;
 };

@@ -1,9 +1,10 @@
 #include "physicsEngine.hpp"
-#include <numeric>
-#include <set>
+#include "object.hpp"
 
-CForceField::CForceField( std::function<void(CPhysicsObject &)> functor )
-  : m_fieldFunctor( std::move(functor) )
+using namespace std;
+
+CForceField::CForceField( function<void(CPhysicsObject &)> functor )
+  : m_fieldFunctor( move(functor) )
 {}
 
 void CForceField::applyForce( CPhysicsObject &obj ) const
@@ -15,98 +16,109 @@ CForceField CForceField::gravitationalField( double g )
 {
   return CForceField( [g]( CPhysicsObject &object )
   {
-    object.m_attributes.forceAccumulator += object.m_attributes.mass * g * math::vector{ 0, -1 };
+    object.m_attributes.forceAccumulator += g / object.m_attributes.invMass * TVector<2>{ 0, -1 };
   } );
 }
 
+TManifold::TManifold( CObject *first, CObject *second )
+  : first( dynamic_cast<CPhysicsObject *>( first ) ),
+    second( dynamic_cast<CPhysicsObject *>( second ) )
+{}
 
-
-void CPhysicsEngine::step( std::vector<std::unique_ptr<CObject>> &objects )
+TManifold::TManifold( CObject *first, CObject *second,
+                      TVector<2> overlapVector,
+                      TVector<2> contactPoint )
+  : TManifold( first, second )
 {
-  for( auto &item: objects )
-  {
-    auto &physItem = dynamic_cast<CPhysicsObject &>( *item );
-    if( physItem.m_attributes.mass == INFINITY )
-      continue;
-    physItem.m_attributes.forceAccumulator = { 0, 0 };
-    for( const auto &field: m_fields )
-      field.applyForce( physItem );
-    item->m_position += physItem.m_attributes.forceAccumulator / physItem.m_attributes.mass;
-  }
-  updateObjectsOrder( objects );
-  std::vector<std::pair<CObject *, CObject *>> overlappingBBx = getPossibleCollisions( objects );
-  calculateDepths( overlappingBBx );
+  contacts.push_back( { overlapVector, contactPoint } );
 }
+
 
 void CPhysicsEngine::addField( CForceField field )
 {
-  m_fields.emplace_back( std::move( field ) );
+  m_fields.emplace_back( move( field ) );
 }
 
-void CPhysicsEngine::updateObjectsOrder( const std::vector<std::unique_ptr<CObject>> &objects )
+void CPhysicsEngine::step( vector<CObject*> &objects )
 {
-  for( auto &object: objects )
-    object->updateBoundingBox();
+  accumulateForces( objects );
+  applyForces( objects );
 
-  m_objectsOrderMinX.resize( objects.size() );
-  std::iota( m_objectsOrderMinX.begin(),
-             m_objectsOrderMinX.end(),
-             0 );
-  m_objectsOrderMaxX.resize( objects.size() );
-  std::iota( m_objectsOrderMaxX.begin(),
-             m_objectsOrderMaxX.end(),
-             0 );
+  vector<TManifold> collisions = findCollisions( objects );
 
-  std::sort( m_objectsOrderMinX.begin(), m_objectsOrderMinX.end(),
-            [&objects]( const auto &idx_a, const auto &idx_b )
-            {
-              return objects[ idx_a ]->m_BBx[ 0 ] < objects[ idx_b ]->m_BBx[ 0 ];
-            } );
-  std::sort( m_objectsOrderMaxX.begin(), m_objectsOrderMaxX.end(),
-            [&objects]( const auto &idx_a, const auto &idx_b )
-            {
-              return objects[ idx_a ]->m_BBx[ 1 ] < objects[ idx_b ]->m_BBx[ 1 ];
-            } );
-}
+  if( m_collisionCallback )
+    m_collisionCallback( collisions );
 
-std::vector<std::pair<CObject *, CObject *>>
-CPhysicsEngine::getPossibleCollisions( std::vector<std::unique_ptr<CObject>> &objects ) const
-{
-  std::vector<std::pair<CObject *, CObject *>> result;
-  std::set<size_t> suspects;
-  size_t openIdx = 0,
-         closeIdx = 0;
-  while( openIdx != objects.size() )
+  applyImpulses( collisions );
+
+  for( size_t i = 0; i < 2; ++i )
   {
-    if( objects[ m_objectsOrderMaxX[ closeIdx ] ]->m_BBx[ 1 ] <
-        objects[ m_objectsOrderMinX[ openIdx ] ]->m_BBx[ 0 ] )
+    resolveCollisions( collisions );
+    collisions = findCollisions( objects );
+  }
+  resolveCollisions( collisions );
+
+
+//  size_t maxIterations = 5;
+//  vector<TManifold> collisions;
+//
+//  do
+//  {
+//     collisions = findCollisions( objects );
+//
+//    if( collisionCallback )
+//      collisionCallback( collisions );
+//
+//    resolveCollisions( collisions );
+//  } while( !collisions.empty() && --maxIterations );
+//
+//  for( auto &item: objects )
+//  {
+//    auto &physItem = dynamic_cast<CPhysicsObject &>( *item );
+//    if( physItem.m_attributes.mass == INFINITY )
+//      continue;
+//    physItem.m_attributes.forceAccumulator = { 0, 0 };
+//    for( const auto &field: m_fields )
+//      field.applyForce( physItem );
+//    item->m_position += physItem.m_attributes.forceAccumulator / physItem.m_attributes.mass;
+//  }
+//  updateObjectsOrder( objects );
+//  vector<pair<CObject *, CObject *>> overlappingBBx = getPossibleCollisions( objects );
+//  calculateDepths( overlappingBBx );
+}
+
+void CPhysicsEngine::accumulateForces( vector<CObject *> &objects )
+{
+  for( auto &item: objects )
+    for( const auto &field: m_fields )
+      item->accumulateForce( field );
+}
+
+void CPhysicsEngine::applyForces( vector<CObject *> &objects )
+{
+  for( auto &item: objects )
+    item->applyForce();
+}
+
+vector<TManifold> CPhysicsEngine::findCollisions( vector<CObject *> &objects )
+{
+  vector<TManifold> collisions;
+  for( auto firstIt = objects.begin(); firstIt != objects.end(); ++firstIt )
+    for( auto secondIt = firstIt + 1; secondIt != objects.end(); ++secondIt )
     {
-      suspects.erase( m_objectsOrderMaxX[ closeIdx++ ] );
-      continue;
+      TManifold collision = (*firstIt)->getManifold( *secondIt );
+      if( collision.isValid() )
+        collisions.push_back( collision );
     }
-    for( size_t idx: suspects )
-      result.emplace_back( objects[ m_objectsOrderMinX[ openIdx ] ].get(), objects[ idx ].get() );
-
-    suspects.insert( m_objectsOrderMinX[ openIdx++ ] );
-  }
-  return result;
-}
-
-std::vector<CManifold>
-CPhysicsEngine::calculateDepths( const std::vector<std::pair<CObject *, CObject *>> &possibleCollisions )
-{
-  std::vector<CManifold> collisions;
-  for( auto [ first, second ]: possibleCollisions )
-  {
-    CManifold collision = first->getManifold( second );
-    if( !collision.overlapVector.isZero() )
-      collisions.emplace_back( collision );
-  }
   return collisions;
 }
 
-CManifold CPhysicsEngine::calculateDepth( const std::pair<CObject *, CObject *> &collision )
+void CPhysicsEngine::applyImpulses( vector<TManifold> & )
 {
-  return  collision.first->getManifold( collision.second );
+
 }
 
+void CPhysicsEngine::resolveCollisions( vector<TManifold> & )
+{
+  // todo
+}

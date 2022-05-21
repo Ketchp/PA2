@@ -1,18 +1,18 @@
 {
-  "screen":
+  "scene":
   {
     "size": [ 1000, 800 ],
     "bg_color": [ 200, 200, 200, 255 ]
   },
   "items":
   [
-    { "type": "bounding box" },
-    { "type": "rectangle", "position": [ 500, 400 ], "size": [  100, 100 ], "color": [   0, 255, 255 ],
-      "physics":  { "mass": 50 } },
-    { "type": "rectangle", "position": [ 100, 100 ], "size": [   50,  50 ], "color": [ 255,   0, 255 ],
-      "physics":  { "mass": 50 } },
-    { "type": "rectangle", "position": [ 800, 600 ], "size": [   50,  50 ], "color": [ 255, 255, 255 ],
-      "physics":  { "mass": 50 } },
-    { "type": "circle", "position": [ 500, 600 ], "size": 50, "physics":  { "mass": 50 }  }
+    { "type": "circle", "position": [ 500, 400 ], "size": 10, "physics": { "density": 50 } },
+    { "type": "circle", "position": [ 500, 700 ], "size": 80, "physics": { "density": 80 } },
+    { "type": "circle", "position": [ 100, 100 ], "size": 30, "physics": { "density": 30 } },
+    { "type": "circle", "position": [ 510, 600 ], "size": 50, "physics": { "density": 50 } },
+    { "type": "line",   "position": [ [  10,  10 ], [ 990,  10 ] ] },
+    { "type": "line",   "position": [ [ 990,  10 ], [ 990, 790 ] ] },
+    { "type": "line",   "position": [ [ 990, 790 ], [  10, 790 ] ] },
+    { "type": "line",   "position": [ [  10, 790 ], [  10,  10 ] ] }
   ]
 }
