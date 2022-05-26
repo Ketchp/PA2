@@ -1,11 +1,12 @@
 #pragma once
-#include "physicsAttributes.hpp"
 #include "linearAlgebra.hpp"
+#include "physicsAttributes.hpp"
 #include "physicsEngine.hpp"
 #include "helpers.hpp"
 #include <GL/freeglut.h>
 #include <string>
 #include <vector>
+#include <iostream>
 
 class CObject;
 class CPhysicsObject;
@@ -21,9 +22,9 @@ public:
   virtual ~CObject() = default;
   virtual void render() const = 0;
   virtual CObject &rotate( double );
-  virtual CObject &translate( TVector<2> );
+  virtual void resetAccumulator();
   virtual void accumulateForce( const CForceField & );
-  virtual void applyForce();
+  virtual void applyForce( double );
   virtual TManifold getManifold( CObject * ) = 0;
   virtual TManifold getManifold( CLine * ) = 0;
   virtual TManifold getManifold( CCircle * ) = 0;
@@ -38,8 +39,12 @@ class CPhysicsObject : public CObject
 public:
   CPhysicsObject( int, TVector<2>, const TPhysicsAttributes &attributes );
   ~CPhysicsObject() override = default;
-  CObject &rotate( double angle ) override = 0;
-  void applyForce() override;
+  void render() const override = 0;
+  void resetAccumulator() final;
+  void accumulateForce( const CForceField & ) final;
+  void applyForce( double ) final;
+  void applyImpulse( const TVector<2> &, const TVector<2> & );
+  TVector<2> getLocalVelocity( const TVector<2> & ) const;
   TPhysicsAttributes m_attributes;
 };
 
@@ -73,6 +78,7 @@ public:
   TManifold getManifold( CCircle * ) override;
   TManifold getManifold( CComplexObject * ) override;
   double m_size;
+  double m_rotation = 0;
   static GLUquadric *gluRenderer;
 };
 

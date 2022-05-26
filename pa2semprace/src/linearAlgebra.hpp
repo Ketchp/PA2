@@ -1,6 +1,6 @@
 #pragma once
-#include <array>
 #include <cmath>
+#include <array>
 #include <cfloat>
 #include <algorithm>
 #include <cstdarg>
@@ -40,9 +40,32 @@ template <size_t h, size_t w, typename dataType>
 TMatrix<h,w, dataType> operator/( TMatrix<h,w, dataType> mat, dataType num );
 
 
-bool equalDoubles( double a, double b, double precision = 100 )
+bool equalDoubles( double a, double b, double precision = 100 );
+
+template <size_t dim, typename dataType>
+TVector<dim, dataType> crossProduct( std::initializer_list<TVector<dim, dataType>> args );
+
+template <typename dataType>
+TVector<2, dataType> crossProduct( const TVector<2, dataType> &first )
 {
-  return std::abs( a - b ) < DBL_EPSILON * ( std::abs( a ) + std::abs( b ) ) * precision;
+  return crossProduct( { first } );
+}
+
+template <typename dataType>
+TVector<3, dataType> crossProduct( const TVector<3, dataType> &first,
+                                   const TVector<3, dataType> &second )
+{
+  return crossProduct( { first, second } );
+}
+
+template <size_t dim, typename dataType>
+std::ostream &operator<<( std::ostream &os, const TVector<dim, dataType> &vec )
+{
+  os << std::string( "( " );
+  os << vec[ 0 ];
+  for( size_t idx = 1; idx < dim; ++idx )
+    os << std::string( ", " ) << vec[ idx ];
+  return os << std::string( " )" );
 }
 
 template <size_t dim, typename dataType = double >
@@ -64,7 +87,11 @@ struct TVector
 
   TVector<dim, dataType> &operator/=( dataType );
 
+  TVector<dim, dataType> operator-() const;
+
   TVector<dim, dataType> &normalize();
+
+  TVector<dim, dataType> normalized() const;
 
   dataType &operator[]( size_t );
 
@@ -85,12 +112,21 @@ struct TVector
   [[nodiscard]] dataType dot( const TVector<dim, dataType> & ) const;
 
   TVector<dim, dataType> &rejectFrom( const TVector<dim, dataType> & );
+  [[nodiscard]] TVector<dim, dataType> rejectedFrom( const TVector<dim, dataType> & ) const;
 
   TVector<dim, dataType> &projectTo( const TVector<dim, dataType> & );
+  [[nodiscard]] TVector<dim, dataType> projectedTo( const TVector<dim, dataType> & ) const;
 
-  TVector<dim, dataType> stretchedTo( dataType ) const;
+  TVector<dim, dataType> &stretchTo( dataType );
+  [[nodiscard]] TVector<dim, dataType> stretchedTo( dataType ) const;
+
+  template <size_t inDim>
+  static TVector<dim, dataType> changeDim( const TVector<inDim, dataType> &input );
+
+  static TVector<dim, dataType> canonical( size_t n );
 
   static size_t dimension() { return dim; };
+
 };
 
 template <size_t h, size_t w, typename dataType = double>
@@ -161,6 +197,12 @@ TVector<dim, dataType> &TVector<dim, dataType>::operator/=( dataType rhs )
 }
 
 template <size_t dim, typename dataType>
+TVector<dim, dataType> TVector<dim, dataType>::operator-() const
+{
+  return *this * -1.;
+}
+
+template <size_t dim, typename dataType>
 dataType &TVector<dim, dataType>::operator[]( size_t idx )
 {
   return data[ idx ];
@@ -175,13 +217,23 @@ const dataType &TVector<dim, dataType>::operator[]( size_t idx ) const
 template <size_t dim, typename dataType>
 TVector<dim, dataType>::operator bool() const
 {
-  return std::all_of( data.begin(), data.end(), []( const dataType &elem ){ return elem != NAN; } );
+  auto pred = []( const dataType &elem )
+  {
+    return std::isnan( elem );
+  };
+  return !std::any_of( data.begin(), data.end(), pred );
 }
 
 template <size_t dim, typename dataType>
 TVector<dim, dataType> &TVector<dim, dataType>::normalize()
 {
-  return *this /= norm();
+  return *this = normalized();
+}
+
+template <size_t dim, typename dataType>
+TVector<dim, dataType> TVector<dim, dataType>::normalized() const
+{
+  return *this / norm();
 }
 
 template <size_t dim, typename dataType>
@@ -193,11 +245,10 @@ dataType TVector<dim, dataType>::norm() const
 template <size_t dim, typename dataType>
 dataType TVector<dim, dataType>::squareNorm() const
 {
-  return std::accumulate( data.begin(), data.end(), dataType( 0 ),
-                          []( const dataType &a, const dataType &b )
-                          {
-                            return a + b * b;
-                          } );
+  dataType val( 0 );
+  for( const dataType &elem: data )
+    val += elem * elem;
+  return val;
 }
 
 template <size_t dim, typename dataType>
@@ -212,39 +263,69 @@ bool TVector<dim, dataType>::isZero() const
   return std::all_of( data.begin(), data.end(), []( const dataType &elem ){ return elem == dataType( 0 ); } );
 }
 
-template <>
-TVector<2, double> TVector<2, double>::rotated( double angle ) const
-{
-  return TMatrix<2, 2, double>::rotationMatrix2D( angle ) * *this;
-}
-
 template <size_t dim, typename dataType>
 dataType TVector<dim, dataType>::dot( const TVector<dim, dataType> &other ) const
 {
-  auto ita = data.begin(),
-  itb = other.data.begin();
   dataType temp( 0 );
-  while( ita != data.end() )
-    temp += *ita++ * *itb;
+  for( auto ita = data.begin(), itb = other.data.begin();
+       ita != data.end();
+       ++ita, ++itb )
+    temp += *ita * *itb;
   return temp;
 }
 
 template <size_t dim, typename dataType>
 TVector<dim, dataType> &TVector<dim, dataType>::rejectFrom( const TVector<dim, dataType> &other )
 {
-  return *this = *this - TVector<2, dataType>( *this ).projectTo( other );
+  return *this = this->rejectedFrom( other );
+}
+
+template <size_t dim, typename dataType>
+TVector<dim, dataType> TVector<dim, dataType>::rejectedFrom( const TVector<dim, dataType> &other ) const
+{
+  return *this - this->projectedTo( other );
 }
 
 template <size_t dim, typename dataType>
 TVector<dim, dataType> &TVector<dim, dataType>::projectTo( const TVector<dim, dataType> &other )
 {
-  return *this = dot( other ) / other.squareNorm() * other;
+  return *this = this->projectedTo( other );
+}
+
+template <size_t dim, typename dataType>
+TVector<dim, dataType> TVector<dim, dataType>::projectedTo( const TVector<dim, dataType> &other ) const
+{
+  return dot( other ) / other.squareNorm() * other;
+}
+
+template <size_t dim, typename dataType>
+TVector<dim, dataType> &TVector<dim, dataType>::stretchTo( dataType length )
+{
+  return *this = this->stretchedTo( length );
 }
 
 template <size_t dim, typename dataType>
 TVector<dim, dataType> TVector<dim, dataType>::stretchedTo( dataType length ) const
 {
   return *this * length / norm();
+}
+
+template <size_t dim, typename dataType>
+template <size_t inDim>
+TVector<dim, dataType> TVector<dim, dataType>::changeDim( const TVector<inDim, dataType> &input )
+{
+  TVector<dim, dataType> out;
+  for( size_t idx = 0; idx < std::min( dim, inDim ); ++idx )
+    out[ idx ] = input[ idx ];
+  return out;
+}
+
+template <size_t dim, typename dataType>
+TVector<dim, dataType> TVector<dim, dataType>::canonical( size_t n )
+{
+  auto res = TVector<dim, dataType>();
+  res[ n ] = 1;
+  return res;
 }
 
 
@@ -281,25 +362,6 @@ const TVector<h,dataType> &TMatrix<h,w,dataType>::operator[]( size_t idx ) const
 {
   return data[ idx ];
 }
-
-template <size_t h, size_t w, typename dataType>
-dataType TMatrix<h,w,dataType>::det() const
-{
-  return data[ 0 ][ 0 ] * data[ 1 ][ 1 ] - data[ 0 ][ 1 ] * data[ 1 ][ 0 ];
-}
-
-template <>
-bool TMatrix<2,2,double>::invert()
-{
-  double deter = det();
-  if( equalDoubles( deter, 0 ) )
-    return false;
-  std::swap( data[ 0 ][ 0 ], data[ 1 ][ 1 ] );
-  std::swap( data[ 0 ][ 1 ], data[ 1 ][ 0 ] );
-  *this /= deter;
-  return true;
-}
-
 
 template <size_t fDim, typename fDataType>
 TVector<fDim, fDataType> operator+( TVector<fDim, fDataType> lhs,

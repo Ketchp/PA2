@@ -11,10 +11,67 @@ CObject &CObject::rotate( double )
   return *this;
 }
 
+void CObject::accumulateForce( const CForceField & )
+{}
+
+void CObject::applyForce( double )
+{}
+
+void CObject::resetAccumulator()
+{}
+
 CPhysicsObject::CPhysicsObject( int id, TVector<2> position, const TPhysicsAttributes &attributes )
   : CObject( id, position ),
     m_attributes( attributes )
 {}
+
+void CPhysicsObject::accumulateForce( const CForceField &field )
+{
+  if( m_attributes.invMass != 0 )
+    field.applyForce( *this );
+}
+
+void CPhysicsObject::applyForce( double dt )
+{
+  if( m_attributes.invMass == 0 )
+    return;
+  m_attributes.velocity += m_attributes.invMass * m_attributes.forceAccumulator * dt;
+  m_attributes.angularVelocity += m_attributes.invAngularMass * m_attributes.momentAccumulator * dt;
+
+  m_position += m_attributes.velocity * dt;
+  rotate( m_attributes.angularVelocity * dt );
+}
+
+void CPhysicsObject::resetAccumulator()
+{
+  m_attributes.forceAccumulator = {};
+  m_attributes.momentAccumulator = 0;
+}
+
+void CPhysicsObject::applyImpulse( const TVector<2> &impulse, const TVector<2> &point )
+{
+  m_attributes.velocity += m_attributes.invMass * impulse;
+
+  TVector<2> lever = point - m_position;
+
+  m_attributes.angularVelocity += lever.dot( crossProduct( impulse ) ) *
+                                  m_attributes.invAngularMass;
+
+  if( dynamic_cast<CLine *>( this ) )
+  {
+    cout << impulse << " at " << point << endl;
+    cout << "dv = " << m_attributes.invMass * impulse << endl;
+    cout << "dw = " << lever.dot( crossProduct( impulse ) ) *
+                       m_attributes.invAngularMass << endl;
+  }
+}
+
+TVector<2> CPhysicsObject::getLocalVelocity( const TVector<2> &point ) const
+{
+  TVector<2> relativePosition = point - m_position;
+  return m_attributes.velocity -
+  m_attributes.angularVelocity * crossProduct( relativePosition );
+}
 
 CLine::CLine( int id, TVector<2> pointStart, TVector<2> pointEnd, double density )
   : CPhysicsObject( id, ( pointStart + pointEnd ) / 2,
@@ -76,9 +133,26 @@ TManifold CLine::getManifold( CLine *other )
     bEndPointOfOverlap = other->end();
   }
 
-  if( aSmallerOverlap.norm() < bSmallerOverlap.norm() )
+  static const double overlapThreshold = 1;
+
+  if( aSmallerOverlap.squareNorm() < bSmallerOverlap.squareNorm() &&
+      overlapThreshold < aSmallerOverlap.squareNorm() )
     return { other, this, aSmallerOverlap, aEndPointOfOverlap + aSmallerOverlap / 2 };
+
+  if( bSmallerOverlap.squareNorm() < overlapThreshold )
+    return { nullptr, nullptr };
+
   return { this, other, bSmallerOverlap, bEndPointOfOverlap + bSmallerOverlap / 2 };
+}
+
+TManifold CLine::getManifold( CCircle *other )
+{
+  return other->getManifold( this );
+}
+
+TManifold CLine::getManifold( CComplexObject *other )
+{
+  return other->getManifold( this );
 }
 
 TVector<2> CLine::calculateCollisionPoint( TVector<2> aBegin, TVector<2> aEnd,
@@ -89,6 +163,9 @@ TVector<2> CLine::calculateCollisionPoint( TVector<2> aBegin, TVector<2> aEnd,
   if( !overlapEquationMatrix.invert() )
     return { NAN, NAN };
   TVector<2> solution = overlapEquationMatrix * ( bBegin - aBegin );
+  if( solution[ 0 ] <= 0 || solution[ 0 ] >= 1 ||
+      solution[ 1 ] <= 0 || solution[ 1 ] >= 1 )
+    return { NAN, NAN };
   return aBegin + solution[ 0 ] * ( aEnd - aBegin );
 }
 
@@ -120,12 +197,27 @@ CCircle::CCircle( int id, TVector<2> centre, double size, double density )
 void CCircle::render() const
 {
   static const int circleSmoothness = 20;
-
   glTranslated( m_position[ 0 ], m_position[ 1 ], 0 );
+
+  GLdouble startColor[ 4 ];
+  glGetDoublev( GL_CURRENT_COLOR, startColor );
+
 
   gluDisk( gluRenderer, 0, m_size, circleSmoothness, 10 );
 
+  TVector<2> orientation = m_size * TVector<2>::canonical( 0 ).rotated( m_rotation );
+
+  glBegin( GL_LINES );
+  glColor4d( 0.5, 0.5, 0.5, 0.5 );
+
+  glVertex3d( 0, 0, 1 );
+  glVertex3d( orientation[ 0 ], orientation[ 1 ], 1 );
+
+  glColor4dv( startColor );
+  glEnd();
+
   glTranslated( -m_position[ 0 ], -m_position[ 1 ], 0 );
+
 }
 
 TManifold CCircle::getManifold( CObject *other )
@@ -141,7 +233,8 @@ TManifold CCircle::getManifold( CLine *line )
   // closest point to line that lies in line segment
   if( abs( projectionScale ) < 1 )
   {
-    TVector<2> normal = ( m_position - line->m_position ).rejectFrom( line->m_direction );
+    TVector<2> normal = m_position - line->m_position;
+    normal.rejectFrom( line->m_direction );
     if( normal.squareNorm() > m_size * m_size )
       return { nullptr, nullptr };
     TVector<2> overlap = normal.stretchedTo( m_size ) - normal;
@@ -185,8 +278,14 @@ TManifold CCircle::getManifold( CCircle *other )
   };
 }
 
+TManifold CCircle::getManifold( CComplexObject *other )
+{
+  return other->getManifold( this );
+}
+
 CObject &CCircle::rotate( double angle )
 {
+  m_rotation += angle;
   return *this;
 }
 

@@ -1,6 +1,8 @@
 #include "painter.hpp"
 #include <iostream>
 
+using namespace std;
+
 CPainter::CPainter( std::vector<CObject *> &objects )
   : m_objects( objects )
 {}
@@ -19,5 +21,15 @@ void CPainter::clickEvent( int button, int state, int x, int y )
       lastMousePosition = { (double)x, (double)y };
     }
   }
-  std::cout << "Click: [ " << x << ", " << y << " ]" << std::endl;
+  cout << "Click: [ " << x << ", " << y << " ]" << endl;
+}
+
+void CPainter::stop()
+{
+
+}
+
+void CPainter::restart()
+{
+
 }

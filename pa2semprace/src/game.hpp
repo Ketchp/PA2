@@ -21,7 +21,8 @@ private:
   void redraw();
   void nextFrame();
 
-  bool m_paused;
+  bool m_paused = true;
+  const int framerate = 100;
 
   CWindow m_window;
   CLevelLoader m_levelLoader;

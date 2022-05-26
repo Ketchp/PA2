@@ -60,7 +60,7 @@ public:
   [[nodiscard]] const CJsonBool &getJsonBool() const;
   [[nodiscard]] const CJsonNull &getJsonNull() const;
   [[nodiscard]] virtual const std::string &toString() const;
-  [[nodiscard]]virtual int toInt() const;
+  [[nodiscard]] virtual int toInt() const;
   [[nodiscard]] virtual double toDouble() const;
   virtual explicit operator bool() const;
 

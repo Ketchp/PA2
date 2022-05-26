@@ -26,9 +26,10 @@ CGame::~CGame()
 
 void CGame::nextFrame()
 {
-  m_engine.step( m_objects );
+  cout << "Step" << endl;
+  m_engine.step( m_objects, 1. / framerate );
   if( !m_paused )
-    m_window.registerTimerEvent( this, &CGame::nextFrame, 100 );
+    m_window.registerTimerEvent( this, &CGame::nextFrame, 1000 / framerate );
   redraw();
 }
 
@@ -39,7 +40,6 @@ void CGame::redraw()
 
 void CGame::mainLoop()
 {
-  m_window.registerTimerEvent( this, &CGame::nextFrame, 2000 );
   m_window.mainLoop();
 }
 
@@ -48,6 +48,7 @@ void CGame::keyPress( unsigned char key, int, int )
   if( key == 'p' )
   {
     m_paused = !m_paused;
+    cout << ( m_paused ? "Paused" : "Running" ) << endl;
     if( m_paused )
       m_painter.stop();
     else

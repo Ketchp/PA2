@@ -23,7 +23,7 @@ void CLevelLoader::loadLevel( CWindow &levelWindow,
   auto &levelDescription = json.get();
 
   if( levelDescription.count( "scene" ) )
-    loadScene( levelDescription[ "screen" ].getObject() );
+    loadScene( levelDescription[ "scene" ].getObject() );
 
   if( levelDescription.count( "items" ) )
     loadItems( levelDescription[ "items" ].getArray() );
@@ -39,6 +39,8 @@ void CLevelLoader::loadScene( const CJsonObject &sceneDescription )
 {
   loadSceneSize( sceneDescription );
 
+  if( sceneDescription.count( "fields" ) )
+    loadFields( sceneDescription[ "fields" ].getArray() );
 
   // todo load color
   // todo load gravity etc..
@@ -53,7 +55,7 @@ void CLevelLoader::loadSceneSize( const CJsonObject &sceneDescription )
     return;
   }
 
-  auto sceneSize = sceneDescription.getArray();
+  auto sceneSize = sceneDescription[ "size" ].getArray();
   if( sceneSize.size() != 2 )
     throw invalid_argument( "Scene size must be array of size 2." );
 
@@ -61,6 +63,22 @@ void CLevelLoader::loadSceneSize( const CJsonObject &sceneDescription )
                              0, sceneSize[ 1 ].toDouble() );
 }
 
+void CLevelLoader::loadFields( const CJsonArray &fieldsDescription )
+{
+  for( size_t idx = 0; idx < fieldsDescription.size(); ++idx )
+    loadField( fieldsDescription[ idx ] );
+}
+
+void CLevelLoader::loadField( const CJsonValue &fieldDescription )
+{
+  if( fieldDescription.m_type == EJsonType::jsonStringType )
+  {
+    if( fieldDescription.getJsonString().toString() == "gravity" )
+    {
+      m_levelEngine->addField( CForceField::gravitationalField() );
+    }
+  }
+}
 
 void CLevelLoader::loadItems( const CJsonArray &itemsDescription )
 {
@@ -74,7 +92,7 @@ void CLevelLoader::loadItem( const CJsonObject &itemDescription )
   if( itemDescription.count( "id" ) )
     itemID = itemDescription[ "id" ].toInt();
   else
-    ++idPool;
+    --idPool;
   string itemType = itemDescription[ "type" ].toString();
 
   double density = loadDensity( itemDescription );
@@ -129,3 +147,4 @@ void CLevelLoader::loadChecks( const CJsonArray & )
 {
  //todo
 }
+

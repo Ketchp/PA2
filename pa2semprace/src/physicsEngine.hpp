@@ -46,7 +46,7 @@ struct TManifold
 class CPhysicsEngine
 {
 public:
-  void step( std::vector<CObject *> & );
+  void step( std::vector<CObject *> &, double );
   void addField( CForceField );
   void registerCollisionCallback( const std::function<void(std::vector<TManifold>)> &callback )
   {
@@ -54,10 +54,25 @@ public:
   }
 private:
   void accumulateForces( std::vector<CObject *> & );
-  static void applyForces( std::vector<CObject *> & );
+  static void applyForces( std::vector<CObject *> &, double );
   static std::vector<TManifold> findCollisions( std::vector<CObject *> & );
   static void resolveCollisions( std::vector<TManifold> & );
   static void applyImpulses( std::vector<TManifold> & );
+  static void applyImpulse( const TManifold & );
+  static void applyImpulse( const TManifold &, const TContactPoint & );
+  static TVector<2> getNormalImpulse( const TManifold &, const TContactPoint & );
+  static TVector<2> getFrictionImpulse( const TManifold &, const TContactPoint & );
+  static TVector<2> getRelativeVelocity( const CPhysicsObject &,
+                                         const CPhysicsObject &,
+                                         const TVector<2> &pointOfContact );
+  static double getCombinedInvMass( const CPhysicsObject &,
+                                    const CPhysicsObject &,
+                                    const TVector<2> &point,
+                                    const TVector<2> &direction );
+
+  static double getObjectInvMass( const CPhysicsObject &,
+                                  const TVector<2> &point,
+                                  const TVector<2> &direction );
 
   std::vector<CForceField> m_fields;
   std::function<void(std::vector<TManifold>)> m_collisionCallback;

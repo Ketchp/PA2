@@ -21,6 +21,7 @@ struct TCheck
 };
 
 
+class CJsonValue;
 class CJsonObject;
 class CJsonArray;
 class CLevelLoader
@@ -41,6 +42,8 @@ private:
 
   void loadScene( const CJsonObject & );
     void loadSceneSize( const CJsonObject & );
+    void loadFields( const CJsonArray & );
+      void loadField( const CJsonValue & );
   void loadItems( const CJsonArray & );
     void loadItem( const CJsonObject & );
       static TVector<2> loadVector2D( const CJsonArray & );

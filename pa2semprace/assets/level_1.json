@@ -2,14 +2,16 @@
   "scene":
   {
     "size": [ 1000, 800 ],
-    "bg_color": [ 200, 200, 200, 255 ]
+    "bg_color": [ 200, 200, 200, 255 ],
+    "fields": [ "gravity" ]
   },
   "items":
   [
-    { "type": "circle", "position": [ 500, 400 ], "size": 10, "physics": { "density": 50 } },
-    { "type": "circle", "position": [ 500, 700 ], "size": 80, "physics": { "density": 80 } },
-    { "type": "circle", "position": [ 100, 100 ], "size": 30, "physics": { "density": 30 } },
-    { "type": "circle", "position": [ 510, 600 ], "size": 50, "physics": { "density": 50 } },
+    { "type": "circle", "position": [ 230, 700 ], "size": 60, "physics": { "density": 50 } },
+    { "type": "line",   "position": [ [ 150, 150 ], [ 250, 250 ] ], "physics": { "density": 80 } },
+    { "type": "line",   "position": [ [ 220, 200 ], [ 500, 100 ] ], "physics": { "density": 80 } },
+    { "type": "line",   "position": [ [ 150, 770 ], [ 450, 770 ] ], "physics": { "density": 80 } },
+    { "type": "line",   "position": [ [ 650, 150 ], [ 850, 250 ] ], "physics": { "density": 10 } },
     { "type": "line",   "position": [ [  10,  10 ], [ 990,  10 ] ] },
     { "type": "line",   "position": [ [ 990,  10 ], [ 990, 790 ] ] },
     { "type": "line",   "position": [ [ 990, 790 ], [  10, 790 ] ] },

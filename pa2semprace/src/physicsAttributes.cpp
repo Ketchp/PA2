@@ -35,6 +35,8 @@ TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double density,
 }
 
 TPhysicsAttributes::TPhysicsAttributes( double mass, double angularMass )
-  : invMass( 1 / mass ),
+  : mass( mass ),
+    invMass( 1 / mass ),
+    angularMass( angularMass ),
     invAngularMass( 1 / angularMass )
 {}

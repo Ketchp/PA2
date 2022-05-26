@@ -11,10 +11,14 @@ struct TPhysicsAttributes
                                                      TVector<2> centreOfMass );
   TVector<2> velocity;
   double angularVelocity = 0;
+  double mass;
   double invMass;
+  double angularMass;
   double invAngularMass;
   TVector<2> forceAccumulator;
   double momentAccumulator = 0;
+  double elasticity = 0.9;
+  double frictionCoefficient = 0.1;
 private:
   TPhysicsAttributes( double mass, double angularMass );
 };
