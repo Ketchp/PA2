@@ -105,11 +105,14 @@ struct TVector
 
   [[nodiscard]] dataType distance( const TVector<dim, dataType> & ) const;
 
+  [[nodiscard]] dataType squareDistance( const TVector<dim, dataType> & ) const;
+
   [[nodiscard]] bool isZero() const;
 
-  [[nodiscard]] TVector<dim, dataType> rotated( double ) const;
-
   [[nodiscard]] dataType dot( const TVector<dim, dataType> & ) const;
+
+  TVector<dim, dataType> &rotate( double );
+  [[nodiscard]] TVector<dim, dataType> rotated( double ) const;
 
   TVector<dim, dataType> &rejectFrom( const TVector<dim, dataType> & );
   [[nodiscard]] TVector<dim, dataType> rejectedFrom( const TVector<dim, dataType> & ) const;
@@ -124,6 +127,8 @@ struct TVector
   static TVector<dim, dataType> changeDim( const TVector<inDim, dataType> &input );
 
   static TVector<dim, dataType> canonical( size_t n );
+
+  static TVector<dim, dataType> canonical( size_t n, dataType size );
 
   static size_t dimension() { return dim; };
 
@@ -258,6 +263,12 @@ dataType TVector<dim, dataType>::distance( const TVector<dim, dataType> &other )
 }
 
 template <size_t dim, typename dataType>
+dataType TVector<dim, dataType>::squareDistance( const TVector<dim, dataType> &other ) const
+{
+  return ( *this - other ).squareNorm();
+}
+
+template <size_t dim, typename dataType>
 bool TVector<dim, dataType>::isZero() const
 {
   return std::all_of( data.begin(), data.end(), []( const dataType &elem ){ return elem == dataType( 0 ); } );
@@ -325,6 +336,14 @@ TVector<dim, dataType> TVector<dim, dataType>::canonical( size_t n )
 {
   auto res = TVector<dim, dataType>();
   res[ n ] = 1;
+  return res;
+}
+
+template <size_t dim, typename dataType>
+TVector<dim, dataType> TVector<dim, dataType>::canonical( size_t n, dataType size )
+{
+  auto res = TVector<dim, dataType>();
+  res[ n ] = size;
   return res;
 }
 

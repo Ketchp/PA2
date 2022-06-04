@@ -20,19 +20,6 @@ CForceField CForceField::gravitationalField( double g )
   } );
 }
 
-TManifold::TManifold( CObject *first, CObject *second )
-  : first( dynamic_cast<CPhysicsObject *>( first ) ),
-    second( dynamic_cast<CPhysicsObject *>( second ) )
-{}
-
-TManifold::TManifold( CObject *first, CObject *second,
-                      TVector<2> overlapVector,
-                      TVector<2> contactPoint )
-  : TManifold( first, second )
-{
-  contacts.push_back( { overlapVector, contactPoint } );
-}
-
 
 void CPhysicsEngine::addField( CForceField field )
 {
@@ -110,7 +97,7 @@ vector<TManifold> CPhysicsEngine::findCollisions( vector<CObject *> &objects )
     for( auto secondIt = firstIt + 1; secondIt != objects.end(); ++secondIt )
     {
       TManifold collision = (*firstIt)->getManifold( *secondIt );
-      if( collision.isValid() )
+      if( collision )
         collisions.push_back( collision );
     }
   return collisions;
@@ -131,11 +118,19 @@ void CPhysicsEngine::applyImpulse( const TManifold &manifold )
 void CPhysicsEngine::applyImpulse( const TManifold &manifold, const TContactPoint &contactPoint )
 {
   TVector<2> normalImpulse = getNormalImpulse( manifold, contactPoint );
-  TVector<2> frictionImpulse = getFrictionImpulse( manifold, contactPoint );
 
-  TVector<2> impulse = normalImpulse + frictionImpulse;
-  manifold.first->applyImpulse( impulse, contactPoint.contactPoint );
-  manifold.second->applyImpulse( -impulse, contactPoint.contactPoint );
+  manifold.first->applyImpulse( normalImpulse, contactPoint.contactPoint );
+  manifold.second->applyImpulse( -normalImpulse, contactPoint.contactPoint );
+
+  TVector<2> frictionImpulse = getFrictionImpulse( manifold, contactPoint );
+  double frictionCoefficientSq = manifold.first->m_attributes.frictionCoefficient
+          * manifold.second->m_attributes.frictionCoefficient;
+
+  if( frictionImpulse.squareNorm() > frictionCoefficientSq * normalImpulse.squareNorm() )
+    frictionImpulse.stretchTo( sqrt( frictionCoefficientSq ) * normalImpulse.norm() );
+
+  manifold.first->applyImpulse( frictionImpulse, contactPoint.contactPoint );
+  manifold.second->applyImpulse( -frictionImpulse, contactPoint.contactPoint );
 }
 
 TVector<2> CPhysicsEngine::getNormalImpulse( const TManifold &manifold, const TContactPoint &contactPoint )

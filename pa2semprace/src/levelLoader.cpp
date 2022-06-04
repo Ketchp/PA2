@@ -1,5 +1,4 @@
 #include "levelLoader.hpp"
-#include "jsonParser.hpp"
 
 using namespace std;
 
@@ -97,9 +96,7 @@ void CLevelLoader::loadItem( const CJsonObject &itemDescription )
 
   double density = loadDensity( itemDescription );
 
-  if( itemType == "line" )
-    loadLine( itemDescription, itemID, density );
-  else if( itemType == "circle" )
+  if( itemType == "circle" )
     loadCircle( itemDescription, itemID, density );
   else if( itemType == "rectangle" )
     loadRectangle( itemDescription, itemID, density );
@@ -108,13 +105,6 @@ void CLevelLoader::loadItem( const CJsonObject &itemDescription )
 TVector<2> CLevelLoader::loadVector2D( const CJsonArray &jsonArray )
 {
   return { jsonArray[ 0 ].toDouble(), jsonArray[ 1 ].toDouble() };
-}
-
-void CLevelLoader::loadLine( const CJsonObject &lineDescription, int id, double density )
-{
-  TVector<2> begin = loadVector2D( lineDescription[ "position" ][ 0 ].getArray() );
-  TVector<2> end = loadVector2D( lineDescription[ "position" ][ 1 ].getArray() );
-  m_objects->push_back( (CObject *)new CLine( id, begin, end, density ) );
 }
 
 void CLevelLoader::loadCircle( const CJsonObject &circleDescription, int id, double density )
@@ -128,7 +118,10 @@ void CLevelLoader::loadRectangle( const CJsonObject &rectDescription, int id, do
 {
   TVector<2> size = loadVector2D( rectDescription[ "size" ].getArray() );
   TVector<2> position = loadVector2D( rectDescription[ "position" ].getArray() );
-  m_objects->push_back( (CObject *)CComplexObject::makeRectangle( id, position, size, density ) );
+  double rotation = loadRotation( rectDescription );
+  m_objects->push_back( (CObject *)new CRectangle( id, position,
+                                                   size[ 0 ], size[ 1 ],
+                                                   rotation, density ) );
 }
 
 double CLevelLoader::loadDensity( const CJsonObject &itemDescription )
@@ -136,6 +129,13 @@ double CLevelLoader::loadDensity( const CJsonObject &itemDescription )
   if( itemDescription.count( "physics" ) && itemDescription[ "physics" ].count( "density" ) )
     return itemDescription[ "physics" ][ "density" ].toDouble();
   return HUGE_VAL;
+}
+
+double CLevelLoader::loadRotation( const CJsonObject &itemDescription )
+{
+  if( itemDescription.count( "rotation" ) )
+    return itemDescription[ "rotation" ].toDouble();
+  return 0;
 }
 
 void CLevelLoader::loadControls( const CJsonArray & )

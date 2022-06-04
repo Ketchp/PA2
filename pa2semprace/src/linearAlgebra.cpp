@@ -32,6 +32,12 @@ TVector<2, double> TVector<2, double>::rotated( double angle ) const
 }
 
 template <>
+TVector<2, double> &TVector<2, double>::rotate( double angle )
+{
+  return *this = this->rotated( angle );
+}
+
+template <>
 double TMatrix<2,2,double>::det() const
 {
   return data[ 0 ][ 0 ] * data[ 1 ][ 1 ] - data[ 0 ][ 1 ] * data[ 1 ][ 0 ];

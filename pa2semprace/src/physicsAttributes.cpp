@@ -2,17 +2,17 @@
 
 using namespace std;
 
-TPhysicsAttributes TPhysicsAttributes::lineAttributes( double density, TVector<2> direction )
+TPhysicsAttributes TPhysicsAttributes::rectangleAttributes( double density, double width, double height )
 {
-  double length = 2 * direction.norm();
-  double mass = length * density;
-  return TPhysicsAttributes( mass, mass * length * length / 12 );
+  double mass = density * width * height;
+  double angularMass = mass * ( height * height + width * width ) / 12;
+  return { mass, angularMass };
 }
 
 TPhysicsAttributes TPhysicsAttributes::circleAttributes( double density, double radius )
 {
   double mass = M_PI * radius * radius * density;
-  return TPhysicsAttributes( mass, mass * radius * radius / 2 );
+  return { mass, mass * radius * radius / 2 };
 }
 
 TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double density,
@@ -31,7 +31,7 @@ TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double density,
     TVector<2> segmentCentreOffset = centreOfMass - segmentCentre;
     angularMass += localAngularMass + mass * segmentCentreOffset.squareNorm();
   }
-  return TPhysicsAttributes( mass, angularMass );
+  return { mass, angularMass };
 }
 
 TPhysicsAttributes::TPhysicsAttributes( double mass, double angularMass )

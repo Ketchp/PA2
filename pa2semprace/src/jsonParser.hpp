@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdio>
 #include <vector>
 #include <map>
@@ -15,14 +17,14 @@ public:
   using std::unique_ptr<Type>::unique_ptr;
 
   explicit copy_ptr( const Type &other )
-          : std::unique_ptr<Type>( other.clone() )
-  {};
+    : std::unique_ptr<Type>( other.clone() )
+  {}
+
 
   copy_ptr( const copy_ptr<Type> &other )
-          : std::unique_ptr<Type>( other->clone() )
-  {};
+    : std::unique_ptr<Type>( other->clone() )
+  {}
 };
-
 
 enum class EJsonType
 {

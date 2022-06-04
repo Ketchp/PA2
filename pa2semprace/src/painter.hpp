@@ -1,20 +1,24 @@
 #pragma once
 #include "linearAlgebra.hpp"
 #include <vector>
+#include <functional>
 #include "object.hpp"
+
+class CGame;
 
 class CPainter
 {
 public:
-  explicit CPainter( std::vector<CObject *> & );
-  void moveEvent( int, int );
-  void clickEvent( int, int, int, int );
-  void stop();
-  void restart();
+  explicit CPainter( std::function<void()> );
+  void clickHandler( int, int, int, int, std::vector<CObject *> & );
+  void moveHandler( int, int, std::vector<CObject *> & );
+  void start( int, int, std::vector<CObject *> & );
+  void addPoint( int, int );
+  void stop( int, int );
 private:
   TVector<2> lastMousePosition{ NAN, NAN };
-  std::vector<CObject *> &m_objects;
-  CObject *currentlyDrawn = nullptr;
+  CComplexObject *currentlyDrawn = nullptr;
+  std::function<void()> redrawCallback;
 };
 
 

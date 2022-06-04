@@ -1,6 +1,7 @@
 #pragma once
 #include "physicsAttributes.hpp"
 #include "window.hpp"
+#include "jsonParser.hpp"
 #include <vector>
 
 enum class ECheckType
@@ -21,9 +22,6 @@ struct TCheck
 };
 
 
-class CJsonValue;
-class CJsonObject;
-class CJsonArray;
 class CLevelLoader
 {
 public:
@@ -47,10 +45,10 @@ private:
   void loadItems( const CJsonArray & );
     void loadItem( const CJsonObject & );
       static TVector<2> loadVector2D( const CJsonArray & );
-      void loadLine( const CJsonObject &, int, double );
       void loadCircle( const CJsonObject &, int, double );
       void loadRectangle( const CJsonObject &, int, double );
       double loadDensity( const CJsonObject & );
+      static double loadRotation( const CJsonObject & );
   void loadControls( const CJsonArray & );
   void loadChecks( const CJsonArray & );
 

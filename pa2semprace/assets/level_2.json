@@ -6,10 +6,10 @@
   },
   "items":
   [
-    { "type": "rectangle", "position": [ 500, 400 ], "size": [ 990, 790 ], "physics": { "mass": 20 } },
-    { "type": "rectangle", "position": [ 500, 400 ], "size": [ 100, 100 ], "physics": { "mass": 50 } },
-    { "type": "rectangle", "position": [ 100, 100 ], "size": [  50,  50 ], "physics": { "mass": 50 } },
-    { "type": "rectangle", "position": [ 800, 600 ], "size": [  50,  50 ], "physics": { "mass": 50 } },
-    { "type": "circle",    "position": [ 500, 600 ], "size": 50, "physics": { "mass": 50 }  }
+    { "type": "rectangle", "position": [ 500, 400 ], "size": [ 990, 790 ], "physics": { "density": 20 } },
+    { "type": "rectangle", "position": [ 500, 400 ], "size": [ 100, 100 ], "physics": { "density": 50 } },
+    { "type": "rectangle", "position": [ 100, 100 ], "size": [  50,  50 ], "physics": { "density": 50 } },
+    { "type": "rectangle", "position": [ 800, 600 ], "size": [  50,  50 ], "physics": { "density": 50 } },
+    { "type": "circle",    "position": [ 500, 600 ], "size": 50, "physics": { "density": 50 }  }
   ]
 }

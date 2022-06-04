@@ -6,8 +6,6 @@ CWindow::CWindow( int *argcPtr, char *argv[] )
 {
   assert( !instance && "This implementation allows only one window to exist" != nullptr );
   instance = this;
-  CCircle::gluRenderer = gluNewQuadric();
-
 
   glutInit( argcPtr, argv );
   glutSetOption( GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS );
@@ -29,12 +27,6 @@ CWindow::CWindow( int *argcPtr, char *argv[] )
 #endif
 
 }
-
-CWindow::~CWindow()
-{
-  gluDeleteQuadric( CCircle::gluRenderer );
-}
-
 
 void CWindow::mainLoop() const
 {
@@ -141,9 +133,8 @@ void CWindow::drawItems( const vector<CObject *> &itemVector ) const
   glLoadIdentity();
 
   for( const auto &obj: itemVector )
-  {
-    obj->render();
-  }
+    obj->render( *this );
+
   glutSwapBuffers();
 }
 
@@ -181,5 +172,42 @@ TVector<2> CWindow::getViewSize() const
   return m_viewExtreme - m_viewOrigin;
 }
 
+
+void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint, double width ) const
+{
+
+  TVector<2> normal = crossProduct( endPoint - startPoint ).stretchedTo( width );
+
+  glBegin( GL_QUADS );
+    glVertex2d( (startPoint + normal)[ 0 ], (startPoint + normal)[ 1 ] );
+    glVertex2d( (startPoint - normal)[ 0 ], (startPoint - normal)[ 1 ] );
+    glVertex2d( (endPoint - normal)[ 0 ], (endPoint - normal)[ 1 ] );
+    glVertex2d( (endPoint + normal)[ 0 ], (endPoint + normal)[ 1 ] );
+  glEnd();
+}
+
+void CWindow::drawCircle( const TVector<2> &centre, double radius ) const
+{
+  drawCircle( centre, radius, 0, M_PI * 2 );
+}
+
+void CWindow::drawCircle( const TVector<2> &centre, double radius, double startAngle, double endAngle ) const
+{
+  static const size_t slices = 30;
+  TVector<2> lever = TVector<2>::canonical( 0, radius ).rotated( startAngle );
+  TMatrix<2,2> rotationMatrix =
+          TMatrix<2,2>::rotationMatrix2D( ( endAngle - startAngle ) / slices );
+
+  glBegin( GL_TRIANGLE_FAN );
+  glVertex2d( centre[ 0 ], centre[ 1 ] );
+  glVertex2d( (centre + lever)[ 0 ], (centre + lever)[ 1 ] );
+  for( size_t i = 0; i < slices; i++ )
+  {
+    lever = rotationMatrix * lever;
+    glVertex2d( (centre + lever)[ 0 ], (centre + lever)[ 1 ] );
+  }
+
+  glEnd();
+}
 
 CWindow *CWindow::instance = nullptr;

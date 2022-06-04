@@ -1,6 +1,7 @@
 #pragma once
 #include "linearAlgebra.hpp"
 #include "physicsAttributes.hpp"
+#include "manifold.hpp"
 #include <vector>
 #include <memory>
 #include <functional>
@@ -8,8 +9,6 @@
 #include <numeric>
 #include <set>
 
-class CObject;
-class CPhysicsObject;
 class CForceField
 {
 public:
@@ -19,29 +18,6 @@ public:
   std::function<void(CPhysicsObject &)> m_fieldFunctor;
 };
 
-struct TContactPoint
-{
-  TVector<2> overlapVector; // distance needed to push second object
-  TVector<2> contactPoint;
-};
-
-struct TManifold
-{
-  TManifold( CObject *first, CObject *second );
-
-  TManifold( CObject *first, CObject *second,
-             TVector<2> overlapVector,
-             TVector<2> contactPoint );
-
-  bool isValid() const
-  {
-    return first && second;
-  }
-
-  CPhysicsObject *first;
-  CPhysicsObject *second;
-  std::vector<TContactPoint> contacts;
-};
 
 class CPhysicsEngine
 {

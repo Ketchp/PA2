@@ -9,6 +9,7 @@
 #include <cmath>
 #include <vector>
 #include <memory>
+#include <functional>
 
 class CGame
 {
@@ -20,6 +21,8 @@ private:
   void keyPress( unsigned char, int, int );
   void redraw();
   void nextFrame();
+  void clickHandler( int button, int state, int x, int y );
+  void moveHandler( int x, int y );
 
   bool m_paused = true;
   const int framerate = 100;
@@ -31,3 +34,5 @@ private:
   std::vector<TCheck> m_checks;
   CPainter m_painter;
 };
+
+extern int frame;

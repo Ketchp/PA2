@@ -16,7 +16,6 @@ public:
   static CWindow *instance;
 
   CWindow( int *argcPtr, char *argv[] );
-  ~CWindow();
 
   template <typename type>
   unsigned int registerDrawEvent( type *cl, void(type::*callback)() )
@@ -116,6 +115,11 @@ public:
   }
 
   void drawItems( const std::vector<CObject *> &itemVector ) const;
+
+  void drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint, double ) const;
+  void drawCircle( const TVector<2> &centre, double radius ) const;
+  void drawCircle( const TVector<2> &centre, double radius,
+                   double startAngle, double endAngle ) const;
 
   void resizeView( double left,
                    double right,

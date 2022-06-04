@@ -6,11 +6,6 @@ CObject::CObject( int id, TVector<2> position )
   : m_id( id ), m_position( position )
 {}
 
-CObject &CObject::rotate( double )
-{
-  return *this;
-}
-
 void CObject::accumulateForce( const CForceField & )
 {}
 
@@ -20,10 +15,19 @@ void CObject::applyForce( double )
 void CObject::resetAccumulator()
 {}
 
-CPhysicsObject::CPhysicsObject( int id, TVector<2> position, const TPhysicsAttributes &attributes )
+CPhysicsObject::CPhysicsObject( int id, TVector<2> position,
+                                const TPhysicsAttributes &attributes,
+                                double angle )
   : CObject( id, position ),
-    m_attributes( attributes )
+    m_attributes( attributes ),
+    m_rotation( angle )
 {}
+
+CObject &CPhysicsObject::rotate( double angle )
+{
+  m_rotation += angle;
+  return *this;
+}
 
 void CPhysicsObject::accumulateForce( const CForceField &field )
 {
@@ -57,7 +61,7 @@ void CPhysicsObject::applyImpulse( const TVector<2> &impulse, const TVector<2> &
   m_attributes.angularVelocity += lever.dot( crossProduct( impulse ) ) *
                                   m_attributes.invAngularMass;
 
-  if( dynamic_cast<CLine *>( this ) )
+  if( dynamic_cast<CRectangle *>( this ) )
   {
     cout << impulse << " at " << point << endl;
     cout << "dv = " << m_attributes.invMass * impulse << endl;
@@ -73,151 +77,178 @@ TVector<2> CPhysicsObject::getLocalVelocity( const TVector<2> &point ) const
   m_attributes.angularVelocity * crossProduct( relativePosition );
 }
 
-CLine::CLine( int id, TVector<2> pointStart, TVector<2> pointEnd, double density )
-  : CPhysicsObject( id, ( pointStart + pointEnd ) / 2,
-                    TPhysicsAttributes::lineAttributes( density,
-                                                        ( pointEnd - pointStart ) / 2 ) ),
-    m_direction( ( pointEnd - pointStart ) / 2 )
+CRectangle::CRectangle( int id, TVector<2> centrePoint,
+                        double width, double height,
+                        double rotation, double density )
+  : CPhysicsObject( id, centrePoint,
+                    TPhysicsAttributes::rectangleAttributes( density,
+                                                             width,
+                                                             height ),
+                    rotation ),
+    m_direction{ width / 2, height / 2 },
+    id( id )
 {}
 
-TVector<2> CLine::begin() const
+void CRectangle::render( const CWindow &win ) const
 {
-  return m_position - m_direction;
+  win.drawLine( left(), right(), m_direction[ 1 ] );
 }
 
-TVector<2> CLine::end() const
-{
-  return m_position + m_direction;
-}
-
-void CLine::render() const
-{
-  glBegin( GL_LINES );
-
-  glVertex2d( begin()[ 0 ], begin()[ 1 ] );
-  glVertex2d( end()[ 0 ], end()[ 1 ] );
-
-  glEnd();
-}
-
-TManifold CLine::getManifold( CObject *other )
+TManifold CRectangle::getManifold( CObject *other )
 {
   return other->getManifold( this );
 }
 
-TManifold CLine::getManifold( CLine *other )
+TManifold CRectangle::getManifold( CRectangle *other )
 {
-  TVector<2> collisionPoint = calculateCollisionPoint( begin(), end(),
-                                                         other->begin(), other->end() );
-  if( !collisionPoint )
-    return { nullptr, nullptr };
 
+  TManifold firstSecond = rectOverlap( other );
+  TManifold secondFirst = other->rectOverlap( this );
+  if( !firstSecond )
+    return firstSecond;
+  if( !secondFirst )
+    return secondFirst;
+  if( firstSecond.contacts[ 0 ].overlapVector.squareNorm() <
+      secondFirst.contacts[ 0 ].overlapVector.squareNorm() )
+    return firstSecond;
+  return secondFirst;
+}
 
-  TVector<2> aBeginOverlap = ( collisionPoint - begin() ).rejectFrom( other->m_direction );
-  TVector<2> aEndOverlap = ( collisionPoint - end() ).rejectFrom( other->m_direction );
-  TVector<2> aSmallerOverlap = aBeginOverlap;
-  TVector<2> aEndPointOfOverlap = begin();
-  if( aBeginOverlap.norm() > aEndOverlap.norm() )
+TManifold CRectangle::rectOverlap( const CRectangle *other ) const
+{
+  TVector<2> axes[ 4 ] = {
+          TVector<2>::canonical( 0 ).rotated( m_rotation ),
+          TVector<2>::canonical( 0 ).rotated( m_rotation + M_PI_2 )
+  };
+  axes[ 2 ] = -axes[ 0 ];
+  axes[ 3 ] = -axes[ 1 ];
+  TMatrix<2, 4> firstCorners = corners();
+  TMatrix<2, 4> secondCorners = other->corners();
+
+  double smallestOverlap = HUGE_VAL;
+  TContactPoint res;
+  for( size_t idx = 0; idx < 4; ++idx )
   {
-    aSmallerOverlap = aEndOverlap;
-    aEndPointOfOverlap = end();
+    TContactPoint temp = axisPointsPenetration( axes[ idx ],
+                                                firstCorners[ ( idx + 2 ) % 4 ],
+                                                secondCorners );
+    if( !temp.overlapVector )
+      return { nullptr, nullptr };
+    double dist = temp.overlapVector.squareNorm();
+    if( dist < smallestOverlap )
+    {
+      smallestOverlap = dist;
+      res = temp;
+    }
   }
 
-  TVector<2> bBeginOverlap = ( collisionPoint - other->begin() ).rejectFrom( m_direction );
-  TVector<2> bEndOverlap = ( collisionPoint - other->end() ).rejectFrom( m_direction );
-  TVector<2> bSmallerOverlap = bBeginOverlap;
-  TVector<2> bEndPointOfOverlap = other->begin();
-  if( bBeginOverlap.norm() > bEndOverlap.norm() )
-  {
-    bSmallerOverlap = bEndOverlap;
-    bEndPointOfOverlap = other->end();
-  }
+  return { (CObject *)other, (CObject *)this, res };
+}
 
-  static const double overlapThreshold = 1;
+TManifold CRectangle::getManifold( CCircle *circle )
+{
+  // rough estimate
+//  if( m_position.squareDistance( circle->m_position ) >
+//      ( m_direction.squareNorm() + circle->m_radius * circle->m_radius ) )
+//    return { nullptr, nullptr };
 
-  if( aSmallerOverlap.squareNorm() < bSmallerOverlap.squareNorm() &&
-      overlapThreshold < aSmallerOverlap.squareNorm() )
-    return { other, this, aSmallerOverlap, aEndPointOfOverlap + aSmallerOverlap / 2 };
-
-  if( bSmallerOverlap.squareNorm() < overlapThreshold )
+  TVector<2> closestPoint = rectangleClosestPoint( circle->m_position );
+  double distance = closestPoint.distance( circle->m_position );
+  if( distance >= circle->m_radius )
     return { nullptr, nullptr };
 
-  return { this, other, bSmallerOverlap, bEndPointOfOverlap + bSmallerOverlap / 2 };
+  TVector<2> overlap = ( circle->m_position - closestPoint );
+  overlap.stretchTo( ( circle->m_radius - distance ) / 2 );
+  return { this, circle, overlap, closestPoint - overlap };
 }
 
-TManifold CLine::getManifold( CCircle *other )
+TManifold CRectangle::getManifold( CComplexObject *other )
 {
   return other->getManifold( this );
 }
 
-TManifold CLine::getManifold( CComplexObject *other )
+CObject &CRectangle::rotate( double angle )
 {
-  return other->getManifold( this );
-}
-
-TVector<2> CLine::calculateCollisionPoint( TVector<2> aBegin, TVector<2> aEnd,
-                                             TVector<2> bBegin, TVector<2> bEnd )
-{
-  TMatrix<2,2> overlapEquationMatrix{ aEnd - aBegin,
-                                      bBegin - bEnd };
-  if( !overlapEquationMatrix.invert() )
-    return { NAN, NAN };
-  TVector<2> solution = overlapEquationMatrix * ( bBegin - aBegin );
-  if( solution[ 0 ] <= 0 || solution[ 0 ] >= 1 ||
-      solution[ 1 ] <= 0 || solution[ 1 ] >= 1 )
-    return { NAN, NAN };
-  return aBegin + solution[ 0 ] * ( aEnd - aBegin );
-}
-
-//bool CLine::areColliding( const TVector<2> &aBegin, const TVector<2> &aEnd,
-//                          const TVector<2> &bBegin, const TVector<2> &bEnd )
-//{
-//  TMatrix<2,2> overlapEquationMatrix{ aEnd - aBegin,
-//                                      bBegin - bEnd };
-//  if( !overlapEquationMatrix.invert() )
-//    return false;
-//  TVector<2> solution = overlapEquationMatrix * ( bBegin - aBegin );
-//  return 0 < solution[ 0 ] && solution[ 0 ] < 1 &&
-//         0 < solution[ 1 ] && solution[ 1 ] < 1;
-//}
-
-CObject &CLine::rotate( double angle )
-{
-  m_direction = TMatrix<2,2>::rotationMatrix2D( angle ) * m_direction;
+  CPhysicsObject::rotate( angle );
   return *this;
 }
 
-GLUquadric *CCircle::gluRenderer = nullptr;
+TVector<2> CRectangle::left() const
+{
+  TVector<2> dir = m_direction;
+  dir[ 1 ] = 0;
+  dir.rotate( m_rotation );
+  return m_position - dir;
+}
+
+TVector<2> CRectangle::right() const
+{
+  TVector<2> dir = m_direction;
+  dir[ 1 ] = 0;
+  dir.rotate( m_rotation );
+  return m_position + dir;
+}
+
+TMatrix<2, 4> CRectangle::corners() const
+{
+  TVector<2> firstDiagonal = m_direction.rotated( m_rotation );
+  TVector<2> secondDiagonal = m_direction;
+  secondDiagonal[ 1 ] *= -1;
+  secondDiagonal.rotate( m_rotation );
+  return { m_position + firstDiagonal, m_position + secondDiagonal,
+           m_position - firstDiagonal, m_position - secondDiagonal };
+}
+
+TVector<2> CRectangle::rectangleClosestPoint( const TVector<2> &point ) const
+{
+  TMatrix<2, 4> corn = corners();
+  double smallestDist = HUGE_VAL;
+  TVector<2> closest;
+  for( size_t idx = 0; idx < 4; ++idx )
+  {
+    TVector<2> temp = lineSegmentClosestPoint( corn[ idx ],
+                                               corn[ ( idx + 1 ) % 4 ],
+                                               point );
+    double newDist = temp.squareDistance( point );
+    if( newDist >= smallestDist )
+      continue;
+    smallestDist = newDist;
+    closest = temp;
+  }
+  return closest;
+}
+
+TVector<2> CRectangle::lineSegmentClosestPoint( const TVector<2> &begin,
+                                                const TVector<2> &end,
+                                                const TVector<2> &point )
+{
+  TVector<2> direction = end - begin;
+  double projectionScale = direction.dot( point - begin ) / direction.squareNorm();
+  if( projectionScale <= 0 )
+    return begin;
+  if( projectionScale >= 1 )
+    return end;
+  return begin + direction * projectionScale;
+}
+
 CCircle::CCircle( int id, TVector<2> centre, double size, double density )
   : CPhysicsObject( id, centre,
-                    TPhysicsAttributes::circleAttributes( density, size ) ),
-    m_size( size )
+                    TPhysicsAttributes::circleAttributes( density, size ),
+                    0 ),
+    m_radius( size ),
+    id( id )
 {}
 
-void CCircle::render() const
+void CCircle::render( const CWindow &win ) const
 {
-  static const int circleSmoothness = 20;
-  glTranslated( m_position[ 0 ], m_position[ 1 ], 0 );
-
-  GLdouble startColor[ 4 ];
-  glGetDoublev( GL_CURRENT_COLOR, startColor );
-
-
-  gluDisk( gluRenderer, 0, m_size, circleSmoothness, 10 );
-
-  TVector<2> orientation = m_size * TVector<2>::canonical( 0 ).rotated( m_rotation );
-
-  glBegin( GL_LINES );
-  glColor4d( 0.5, 0.5, 0.5, 0.5 );
-
-  glVertex3d( 0, 0, 1 );
-  glVertex3d( orientation[ 0 ], orientation[ 1 ], 1 );
-
-  glColor4dv( startColor );
-  glEnd();
-
-  glTranslated( -m_position[ 0 ], -m_position[ 1 ], 0 );
-
+  win.drawCircle( m_position, m_radius );
+  glColor3f( 0, 0, 0 );
+  glTranslatef( 0, 0, 1 );
+  win.drawLine( m_position,
+                m_position + TVector<2>::canonical( 0, m_radius ).rotated( m_rotation ),
+                2 );
+  glTranslatef( 0, 0, -1 );
+  glColor3f( 1, 1, 1 );
 }
 
 TManifold CCircle::getManifold( CObject *other )
@@ -225,56 +256,22 @@ TManifold CCircle::getManifold( CObject *other )
   return other->getManifold( this );
 }
 
-TManifold CCircle::getManifold( CLine *line )
+TManifold CCircle::getManifold( CRectangle *line )
 {
-  double projectionScale = line->m_direction.dot( m_position - line->m_position )
-          / line->m_direction.squareNorm();
-
-  // closest point to line that lies in line segment
-  if( abs( projectionScale ) < 1 )
-  {
-    TVector<2> normal = m_position - line->m_position;
-    normal.rejectFrom( line->m_direction );
-    if( normal.squareNorm() > m_size * m_size )
-      return { nullptr, nullptr };
-    TVector<2> overlap = normal.stretchedTo( m_size ) - normal;
-    return { line, this,
-             overlap,
-             line->m_position + line->m_direction * projectionScale + overlap / 2 };
-  }
-
-  TVector<2> relativeBegin = line->begin() - m_position;
-  if( relativeBegin.squareNorm() < m_size * m_size )
-  {
-    TVector<2> overlapVector = relativeBegin.stretchedTo( m_size ) - relativeBegin;
-    return { this, line,
-             overlapVector,
-             line->begin() + overlapVector / 2 };
-  }
-
-  TVector<2> relativeEnd = line->end() - m_position;
-  if( relativeEnd.squareNorm() < m_size * m_size )
-  {
-    TVector<2> overlapVector = relativeEnd.stretchedTo( m_size ) - relativeEnd;
-    return { this, line,
-             overlapVector,
-             line->end() + overlapVector / 2 };
-  }
-
-  return { nullptr, nullptr };
+  return line->getManifold( this );
 }
 
 TManifold CCircle::getManifold( CCircle *other )
 {
   TVector<2> relativePos = other->m_position - m_position;
   double relativeDist = relativePos.norm();
-  double overlapSize = m_size + other->m_size - relativeDist;
+  double overlapSize = m_radius + other->m_radius - relativeDist;
   TVector<2> overlap = relativePos.stretchedTo( overlapSize );
   if( overlapSize <= 0 )
     return { nullptr, nullptr };
   return { this, other,
            overlap,
-           m_position + relativePos.stretchedTo( m_size ) - overlap / 2
+           m_position + relativePos.stretchedTo( m_radius ) - overlap / 2
   };
 }
 
@@ -289,34 +286,31 @@ CObject &CCircle::rotate( double angle )
   return *this;
 }
 
+CComplexObject::CComplexObject()
+  : CPhysicsObject( 0, { NAN, NAN }, { HUGE_VAL, HUGE_VAL }, 0 )
+{}
 
 CComplexObject::CComplexObject( int id, vector<TVector<2>> vertices, double density )
   : CPhysicsObject( id, calculateCentreOfMass( vertices ),
                     TPhysicsAttributes::complexObjectAttributes( density, vertices,
-                                                                 calculateCentreOfMass( vertices ) ) ),
+                                                                 calculateCentreOfMass( vertices ) ),
+                    0 ),
     m_vertices( move( vertices ) )
 {
   for( auto &vertex: m_vertices )
     vertex -= m_position;
 }
 
-void CComplexObject::render() const
+void CComplexObject::render( const CWindow &win ) const
 {
-  glBegin( GL_LINE_STRIP );
-  for( const auto &vertex: m_vertices )
-    glVertex2d( vertex[ 0 ] + m_position[ 0 ], vertex[ 1 ] + m_position[ 1 ] );
-  glEnd();
-}
-
-CComplexObject *CComplexObject::makeRectangle( int id, TVector<2> centre, TVector<2> size,
-                                              double density )
-{
-  return new CComplexObject( id, vector<TVector<2>>( {
-    TVector<2>{ centre[ 0 ] - size[ 0 ] / 2, centre[ 1 ] - size[ 1 ] / 2 },
-    TVector<2>{ centre[ 0 ] + size[ 0 ] / 2, centre[ 1 ] - size[ 1 ] / 2 },
-    TVector<2>{ centre[ 0 ] + size[ 0 ] / 2, centre[ 1 ] + size[ 1 ] / 2 },
-    TVector<2>{ centre[ 0 ] - size[ 0 ] / 2, centre[ 1 ] + size[ 1 ] / 2 },
-    TVector<2>{ centre[ 0 ] - size[ 0 ] / 2, centre[ 1 ] - size[ 1 ] / 2 } } ), density );
+  if( m_vertices.empty() )
+    return;
+  win.drawCircle( m_vertices[ 0 ], 10 );
+  for( size_t idx = 1; idx < m_vertices.size(); ++idx )
+  {
+    win.drawLine( m_vertices[ idx - 1 ], m_vertices[ idx ], 10 );
+    win.drawCircle( m_vertices[ idx ], 10 );
+  }
 }
 
 TVector<2> CComplexObject::calculateCentreOfMass( const vector<TVector<2>> &vertices )
@@ -338,19 +332,19 @@ TManifold CComplexObject::getManifold( CObject *other )
   return other->getManifold( this );
 }
 
-TManifold CComplexObject::getManifold( CLine *other )
+TManifold CComplexObject::getManifold( CRectangle *other )
 {
-  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+  return { nullptr, nullptr }; // todo
 }
 
 TManifold CComplexObject::getManifold( CCircle *other )
 {
-  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+  return { nullptr, nullptr }; // todo
 }
 
 TManifold CComplexObject::getManifold( CComplexObject *other )
 {
-  return { this, other, { 0, 0 }, { 0, 0 } }; // todo
+  return { nullptr, nullptr }; // todo
 }
 
 CObject &CComplexObject::rotate( double angle )
@@ -360,3 +354,118 @@ CObject &CComplexObject::rotate( double angle )
   return *this;
 }
 
+void CComplexObject::addVertex( const TVector<2> &point )
+{
+  m_vertices.push_back( point );
+}
+
+TVector<2> lineLineCollision( const TVector<2> &aBegin,
+                              const TVector<2> &aEnd,
+                              const TVector<2> &bBegin,
+                              const TVector<2> &bEnd )
+{
+  TMatrix<2,2> overlapEquationMatrix{ aEnd - aBegin,
+                                      bBegin - bEnd };
+  if( !overlapEquationMatrix.invert() )
+    return { NAN, NAN };
+  TVector<2> solution = overlapEquationMatrix * ( bBegin - aBegin );
+  if( solution[ 0 ] <= 0 || solution[ 0 ] >= 1 ||
+      solution[ 1 ] <= 0 || solution[ 1 ] >= 1 )
+    return { NAN, NAN };
+  return aBegin + solution[ 0 ] * ( aEnd - aBegin );
+}
+
+TVector<2> lineCircleCollision( const TVector<2> &begin, const TVector<2> &end,
+                                const TVector<2> &centre, double radius )
+{
+  TVector<2> lineVector = end - begin;
+  double projectionScale = lineVector.dot( centre - begin )
+                           / lineVector.squareNorm();
+
+  // closest point to line that lies in line segment
+  if( projectionScale > 0 && projectionScale < 1 )
+  {
+    TVector<2> normal = ( centre - begin ).rejectedFrom( lineVector );
+    if( normal.squareNorm() > radius * radius )
+      return { NAN, NAN };
+    TVector<2> overlap = normal.stretchedTo( radius ) - normal;
+    return begin + lineVector * projectionScale + overlap / 2;
+  }
+
+  TVector<2> relativeBegin = begin - centre;
+  if( relativeBegin.squareNorm() < radius * radius )
+    return begin;
+
+  TVector<2> relativeEnd = end - centre;
+  if( relativeEnd.squareNorm() < radius * radius )
+    return end;
+
+  return { NAN, NAN };
+}
+
+TVector<2> circleCircleCollision( const TVector<2> &firstCentre, double firstRadius,
+                                  const TVector<2> &secondCentre, double secondRadius )
+{
+  TVector<2> relativePos = secondCentre - firstCentre;
+  double relativeDist = relativePos.norm();
+  double overlapSize = firstRadius + secondRadius - relativeDist;
+  if( overlapSize <= 0 )
+    return { NAN, NAN };
+  TVector<2> overlap = relativePos.stretchedTo( overlapSize );
+  return firstCentre + relativePos.stretchedTo( firstRadius ) - overlap / 2;
+}
+
+double separation( const TVector<2> &axis,
+                   const TMatrix<2, 4> &firstPoints,
+                   const TMatrix<2, 4> &secondPoints )
+{
+  TVector<2> normal = crossProduct( axis );
+  double firstProjectionValues[4] = {
+          normal.dot( firstPoints[ 0 ] ),
+          normal.dot( firstPoints[ 1 ] ),
+          normal.dot( firstPoints[ 2 ] ),
+          normal.dot( firstPoints[ 3 ] ),
+  };
+  double secondProjectionValues[4] = {
+          normal.dot( secondPoints[ 0 ] ),
+          normal.dot( secondPoints[ 1 ] ),
+          normal.dot( secondPoints[ 2 ] ),
+          normal.dot( secondPoints[ 3 ] ),
+  };
+  double firstMin = *min_element( firstProjectionValues,
+                                  firstProjectionValues + 4 );
+  double firstMax = *max_element( firstProjectionValues,
+                                  firstProjectionValues + 4 );
+  double secondMin = *min_element( secondProjectionValues,
+                                   secondProjectionValues + 4 );
+  double secondMax = *max_element( secondProjectionValues,
+                                   secondProjectionValues + 4 );
+
+  return min( secondMin - firstMax,
+              secondMax - firstMin );
+}
+
+template <size_t dim>
+TContactPoint axisPointsPenetration( const TVector<2> &axisDirection,
+                                     const TVector<2> &axisPoint,
+                                     const TMatrix<2, dim> &points )
+{
+  TVector<2> normal = crossProduct( axisDirection ).normalized();
+  double maxOverlap = -HUGE_VAL;
+  TVector<2> maxPoint;
+  for( size_t idx = 0; idx < dim; ++idx )
+  {
+    const TVector<2> &point = points[ idx ];
+    double projectionScale = normal.dot( point - axisPoint );
+    if( projectionScale <= maxOverlap )
+      continue;
+    maxOverlap = projectionScale;
+    maxPoint = point;
+  }
+
+  if( maxOverlap <= 0 )
+    return { TVector<2>{ NAN, NAN },
+             TVector<2>{ NAN, NAN } };
+
+  return { normal.stretchedTo( maxOverlap / 2 ), maxPoint };
+}
