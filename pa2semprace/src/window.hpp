@@ -1,6 +1,5 @@
 #pragma once
-#include "object.hpp"
-#include "helpers.hpp"
+#include "linearAlgebra.hpp"
 #include <GL/freeglut.h>
 #include <list>
 #include <vector>
@@ -113,8 +112,6 @@ public:
     glutCloseFunc( &CWindow::windowCloseEventHandler );
     return 0;
   }
-
-  void drawItems( const std::vector<CObject *> &itemVector ) const;
 
   void drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint, double ) const;
   void drawCircle( const TVector<2> &centre, double radius ) const;

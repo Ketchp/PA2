@@ -10,13 +10,13 @@ class CPainter
 {
 public:
   explicit CPainter( std::function<void()> );
-  void clickHandler( int, int, int, int, std::vector<CObject *> & );
-  void moveHandler( int, int, std::vector<CObject *> & );
   void start( int, int, std::vector<CObject *> & );
-  void addPoint( int, int );
-  void stop( int, int );
-private:
+  void addPoint( int, int, const std::vector<CObject *> & );
+  void stop( int, int, const std::vector<CObject *> & );
+
   TVector<2> lastMousePosition{ NAN, NAN };
+  static const double minDrawLength;
+private:
   CComplexObject *currentlyDrawn = nullptr;
   std::function<void()> redrawCallback;
 };

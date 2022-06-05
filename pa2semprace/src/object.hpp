@@ -2,7 +2,6 @@
 #include "linearAlgebra.hpp"
 #include "physicsAttributes.hpp"
 #include "physicsEngine.hpp"
-#include "helpers.hpp"
 #include "window.hpp"
 #include "manifold.hpp"
 #include <GL/freeglut.h>
@@ -16,8 +15,12 @@ class CRectangle;
 class CCircle;
 class CComplexObject;
 
-class CWindow;
-
+enum ETags
+{
+  WIN_ZONE = 1,
+  NO_DRAW_ZONE = 2,
+  DRAWN = 4,
+};
 
 class CObject
 {
@@ -33,6 +36,9 @@ public:
   virtual TManifold getManifold( CRectangle * ) = 0;
   virtual TManifold getManifold( CCircle * ) = 0;
   virtual TManifold getManifold( CComplexObject * ) = 0;
+
+  virtual double rayTrace( const TVector<2> &position,
+                           const TVector<2> &direction ) const = 0;
 
   int m_id;
   TVector<2> m_position;
@@ -50,76 +56,35 @@ public:
   void applyForce( double ) final;
   void applyImpulse( const TVector<2> &, const TVector<2> & );
   TVector<2> getLocalVelocity( const TVector<2> & ) const;
+
+  double rayTrace( const TVector<2> &position,
+                   const TVector<2> &direction ) const override = 0;
+
   TPhysicsAttributes m_attributes;
   double m_rotation = 0;
 };
 
-class CRectangle : public CPhysicsObject
-{
-public:
-  CRectangle( int, TVector<2> centrePoint,
-              double width, double height,
-              double rotation, double density );
-  void render( const CWindow & ) const override;
-  CObject &rotate( double angle ) override;
-  TManifold getManifold( CObject * ) override;
-  TManifold getManifold( CRectangle * ) override;
-  TManifold getManifold( CCircle * ) override;
-  TManifold getManifold( CComplexObject * ) override;
+TContactPoint lineLineCollision( const TVector<2> &, const TVector<2> &,
+                                 const TVector<2> &, const TVector<2> & );
 
-  TManifold rectOverlap( const CRectangle * ) const;
-  TVector<2> rectangleClosestPoint( const TVector<2> & ) const;
-  static TVector<2> lineSegmentClosestPoint( const TVector<2> &,
-                                             const TVector<2> &,
-                                             const TVector<2> &);
+TContactPoint lineCircleCollision( const TVector<2> &, const TVector<2> &,
+                                   const TVector<2> &, double );
 
-  [[nodiscard]] TVector<2> left() const;
-  [[nodiscard]] TVector<2> right() const;
+TContactPoint circleCircleCollision( const TVector<2> &position, double radius,
+                                     const TVector<2> &, double );
 
-  [[nodiscard]] TMatrix<2, 4> corners() const;
+TContactPoint rectCircleCollision( const TVector<2> &position,
+                                   const TVector<2> &sizes,
+                                   double rotation,
+                                   const TVector<2> &, double );
 
+TContactPoint rectRectCollision( const TVector<2> &, const TVector<2> &, double,
+                                 const TVector<2> &, const TVector<2> &, double );
 
-  // vector from object centre to top-left corner
-  TVector<2> m_direction;
-  int id;
-};
+TContactPoint firstRectOverlap( const TVector<2> &, const TVector<2> &, double,
+                                const TVector<2> &, const TVector<2> &, double );
 
-class CCircle : public CPhysicsObject
-{
-public:
-  CCircle( int, TVector<2>, double size, double );
-  void render( const CWindow & ) const override;
-  CObject &rotate( double angle ) override;
-  TManifold getManifold( CObject * ) override;
-  TManifold getManifold( CRectangle * ) override;
-  TManifold getManifold( CCircle * ) override;
-  TManifold getManifold( CComplexObject * ) override;
-  double m_radius;
-  int id;
-};
-
-class CComplexObject : public CPhysicsObject
-{
-public:
-  explicit CComplexObject();
-  CComplexObject( int, std::vector<TVector<2>> vertices, double );
-  void render( const CWindow & ) const override;
-  CObject &rotate( double angle ) override;
-  TManifold getManifold( CObject * ) override;
-  TManifold getManifold( CRectangle * ) override;
-  TManifold getManifold( CCircle * ) override;
-  TManifold getManifold( CComplexObject * ) override;
-  static TVector<2> calculateCentreOfMass( const std::vector<TVector<2>> &vertices );
-  void addVertex( const TVector<2> & );
-  std::vector<TVector<2>> m_vertices;
-};
-
-TVector<2> lineLineCollision( const TVector<2> &, const TVector<2> &,
-                              const TVector<2> &, const TVector<2> & );
-TVector<2> lineCircleCollision( const TVector<2> &, const TVector<2> &,
-                                const TVector<2> &, double );
-TVector<2> circleCircleCollision( const TVector<2> &, double,
-                                  const TVector<2> &, double );
+TMatrix<2, 4> rectCorners( const TVector<2> &, const TVector<2> &, double );
 
 double separation( const TVector<2> &axis,
                    const TMatrix<2, 4> &firstPoints,
@@ -129,3 +94,14 @@ template <size_t dim>
 TContactPoint axisPointsPenetration( const TVector<2> &axisDirection,
                                      const TVector<2> &axisPoint,
                                      const TMatrix<2, dim> &points );
+
+TVector<2> lineSegmentClosestPoint( const TVector<2> &,
+                                    const TVector<2> &,
+                                    const TVector<2> & );
+
+TContactPoint biggestOverlap( CObject *, const std::vector<CObject *> & );
+
+double rayTraceLineSeg( const TVector<2> &position,
+                        const TVector<2> &direction,
+                        const TVector<2> &begin,
+                        const TVector<2> &end );

@@ -124,20 +124,6 @@ void CWindow::resizeWindowAction( int w, int h )
   glMatrixMode( GL_MODELVIEW );
 }
 
-void CWindow::drawItems( const vector<CObject *> &itemVector ) const
-{
-  // Clear Color and Depth Buffers
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-  // Reset transformations
-  glLoadIdentity();
-
-  for( const auto &obj: itemVector )
-    obj->render( *this );
-
-  glutSwapBuffers();
-}
-
 void CWindow::resizeView( double left, double right, double bottom, double top )
 {
   m_viewOrigin = { left, bottom };

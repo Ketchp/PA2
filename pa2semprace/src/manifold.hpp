@@ -24,6 +24,9 @@ struct TManifold
   TManifold( CObject *first, CObject *second,
              const TContactPoint & );
 
+  TManifold( CObject *first, CObject *second,
+             std::vector<TContactPoint> contacts );
+
   explicit operator bool() const
   {
     return first && second;

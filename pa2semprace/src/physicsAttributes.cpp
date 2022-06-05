@@ -19,6 +19,9 @@ TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double density,
                                                                 vector<TVector<2>> points,
                                                                 TVector<2> centreOfMass )
 {
+  if( points.size() < 2 )
+    return { density * M_PI * 100, M_PI * density * 10000 / 2 };
+
   double mass = 0, segmentMass;
   double angularMass = 0;
   for( auto it = points.begin() + 1; it != points.end(); ++it )

@@ -132,6 +132,8 @@ struct TVector
 
   static size_t dimension() { return dim; };
 
+  double getAngle() const;
+
 };
 
 template <size_t h, size_t w, typename dataType = double>

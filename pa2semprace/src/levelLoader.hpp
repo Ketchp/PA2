@@ -1,7 +1,11 @@
 #pragma once
 #include "physicsAttributes.hpp"
+#include "physicsEngine.hpp"
 #include "window.hpp"
 #include "jsonParser.hpp"
+#include "circle.hpp"
+#include "rectangle.hpp"
+#include "complexObject.hpp"
 #include <vector>
 
 enum class ECheckType

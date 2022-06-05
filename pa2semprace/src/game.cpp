@@ -38,7 +38,16 @@ void CGame::nextFrame()
 
 void CGame::redraw()
 {
-  m_window.drawItems( m_objects );
+  // Clear Color and Depth Buffers
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+  // Reset transformations
+  glLoadIdentity();
+
+  for( const auto &obj: m_objects )
+    obj->render( m_window );
+
+  glutSwapBuffers();
 }
 
 void CGame::mainLoop()
@@ -53,7 +62,7 @@ void CGame::keyPress( unsigned char key, int x, int y )
     m_paused = !m_paused;
     cout << ( m_paused ? "Paused" : "Running" ) << endl;
     if( m_paused )
-      m_painter.stop( x, y );
+      m_painter.stop( x, y, m_objects );
     else
       nextFrame();
   }
@@ -63,11 +72,27 @@ void CGame::keyPress( unsigned char key, int x, int y )
 
 void CGame::clickHandler( int button, int state, int x, int y )
 {
-  m_painter.clickHandler( button, state, x, y, m_objects );
+  cout << "Click: [ " << x << ", " << y << " ]" << endl;
+  if( button == GLUT_LEFT_BUTTON )
+  {
+    if( state == GLUT_DOWN )
+    {
+      m_painter.start( x, y, m_objects );
+      m_paused = true;
+    }
+    else if( state == GLUT_UP )
+    {
+      m_painter.stop( x, y, m_objects );
+      m_paused = false;
+      nextFrame();
+    }
+  }
 }
 
 void CGame::moveHandler( int x, int y )
 {
-  m_painter.moveHandler( x, y, m_objects );
+  cout << "Move: [" << x << ", " << y << " ]" << endl;
+  if( m_painter.lastMousePosition.distance( { (double)x, (double)y } ) > CPainter::minDrawLength )
+    m_painter.addPoint( x, y, m_objects );
 }
 

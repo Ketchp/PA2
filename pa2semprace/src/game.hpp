@@ -3,7 +3,6 @@
 #include "physicsEngine.hpp"
 #include "levelLoader.hpp"
 #include "jsonParser.hpp"
-#include "helpers.hpp"
 #include "painter.hpp"
 #include "object.hpp"
 #include <cmath>

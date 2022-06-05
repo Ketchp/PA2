@@ -37,6 +37,12 @@ TVector<2, double> &TVector<2, double>::rotate( double angle )
   return *this = this->rotated( angle );
 }
 
+template<>
+double TVector<2, double>::getAngle() const
+{
+  return -atan2( data[ 1 ], data[ 0 ] );
+}
+
 template <>
 double TMatrix<2,2,double>::det() const
 {
