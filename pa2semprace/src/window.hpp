@@ -1,5 +1,6 @@
 #pragma once
 #include "linearAlgebra.hpp"
+#include "tags.hpp"
 #include <GL/freeglut.h>
 #include <list>
 #include <vector>
@@ -113,15 +114,20 @@ public:
     return 0;
   }
 
-  void drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint, double ) const;
-  void drawCircle( const TVector<2> &centre, double radius ) const;
+  void drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint,
+                 double, ETag = ETag::NONE ) const;
   void drawCircle( const TVector<2> &centre, double radius,
-                   double startAngle, double endAngle ) const;
+                   ETag = ETag::NONE ) const;
+  void drawCircle( const TVector<2> &centre, double radius,
+                   double startAngle, double endAngle,
+                   ETag = ETag::NONE ) const;
 
   void resizeView( double left,
                    double right,
                    double bottom,
                    double top );
+
+  void changeTitle( const std::string & );
 
   TVector<2> getViewSize() const;
 

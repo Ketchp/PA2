@@ -4,6 +4,7 @@
 #include "physicsEngine.hpp"
 #include "window.hpp"
 #include "manifold.hpp"
+#include "tags.hpp"
 #include <GL/freeglut.h>
 #include <string>
 #include <vector>
@@ -15,12 +16,6 @@ class CRectangle;
 class CCircle;
 class CComplexObject;
 
-enum ETags
-{
-  WIN_ZONE = 1,
-  NO_DRAW_ZONE = 2,
-  DRAWN = 4,
-};
 
 class CObject
 {
@@ -38,9 +33,12 @@ public:
   virtual TManifold getManifold( CComplexObject * ) = 0;
 
   virtual double rayTrace( const TVector<2> &position,
-                           const TVector<2> &direction ) const = 0;
+                           const TVector<2> &direction ) const;
+
+  void addTag( ETag tag );
 
   int m_id;
+  ETag tags = ETag::NONE;
   TVector<2> m_position;
 };
 

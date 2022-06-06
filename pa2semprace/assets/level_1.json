@@ -1,9 +1,15 @@
 {
   "scene":
   {
+    "title": "Level 1",
     "size": [ 1000, 800 ],
-    "bg_color": [ 200, 200, 200, 255 ],
-    "fields": [ "gravity" ]
+    "fields": [ "gravity" ],
+    "pen":
+    {
+      "width": 15,
+      "density": 50
+    },
+    "next": "assets/level_2.json"
   },
   "items":
   [
@@ -17,6 +23,13 @@
     { "id":  6, "type": "rectangle", "position": [ 500,  10 ], "size": [ 970,  10 ] },
     { "id":  7, "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
     { "id":  8, "type": "rectangle", "position": [ 500, 790 ], "size": [ 970,  10 ] },
-    { "id":  9, "type": "rectangle", "position": [  10, 400 ], "size": [  10, 790 ] }
+    { "id":  9, "type": "rectangle", "position": [  10, 400 ], "size": [  10, 790 ] },
+    { "id": 12, "type": "rectangle", "position": [ 900, 100 ], "size": [ 160, 160 ], "tag": "win zone" },
+    { "id": 13, "type": "rectangle", "position": [ 800, 400 ], "size": [ 370, 780 ], "tag": "no draw zone" }
+  ],
+  "checks":
+  [
+    { "checkType": "key press", "key": "r", "action": "reset" },
+    { "checkType": "collision", "collisionType": "TagId", "id": 1 }
   ]
 }

@@ -16,6 +16,8 @@ public:
 
   TVector<2> lastMousePosition{ NAN, NAN };
   static const double minDrawLength;
+  double drawWidth = 8;
+  double density = 50;
 private:
   CComplexObject *currentlyDrawn = nullptr;
   std::function<void()> redrawCallback;

@@ -14,12 +14,12 @@ CCircle::CCircle( int id, TVector<2> centre, double size, double density )
 
 void CCircle::render( const CWindow &win ) const
 {
-  win.drawCircle( m_position, m_radius );
+  win.drawCircle( m_position, m_radius, tags );
   glColor3f( 0, 0, 0 );
   glTranslatef( 0, 0, 1 );
   win.drawLine( m_position,
                 m_position + TVector<2>::canonical( 0, m_radius ).rotated( m_rotation ),
-                2 );
+                m_radius / 25, tags );
   glTranslatef( 0, 0, -1 );
   glColor3f( 1, 1, 1 );
 }
@@ -56,6 +56,8 @@ CObject &CCircle::rotate( double angle )
 
 double CCircle::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const
 {
+  if( CObject::rayTrace( position, direction ) == HUGE_VAL )
+    return HUGE_VAL;
   TVector<2> unit = direction.normalized();
   TVector<2> chordHeight = ( m_position - position ).rejectedFrom( unit );
   if( chordHeight.squareNorm() > m_radius * m_radius )

@@ -15,7 +15,8 @@ TPhysicsAttributes TPhysicsAttributes::circleAttributes( double density, double 
   return { mass, mass * radius * radius / 2 };
 }
 
-TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double density,
+TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double width,
+                                                                double density,
                                                                 vector<TVector<2>> points,
                                                                 TVector<2> centreOfMass )
 {

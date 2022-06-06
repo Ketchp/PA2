@@ -11,7 +11,8 @@ CGame::CGame( int *argcPtr, char *argv[] )
 {
   m_levelLoader.loadLevel( m_window, m_engine,
                            m_objects,
-                           m_checks );
+                           m_checks,
+                           m_painter );
 
 
   m_window.registerDrawEvent( this, &CGame::redraw );

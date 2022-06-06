@@ -4,7 +4,9 @@
 class CComplexObject : public CPhysicsObject
 {
 public:
-  CComplexObject( int, std::vector<TVector<2>> vertices, double );
+  CComplexObject( int id, double width );
+  CComplexObject( int, std::vector<TVector<2>> vertices, double width, double density );
+  void spawn( double density = NAN );
   void render( const CWindow & ) const override;
   CObject &rotate( double angle ) override;
   TManifold getManifold( CObject * ) override;
@@ -17,7 +19,7 @@ public:
   double rayTrace( const TVector<2> &position,
                    const TVector<2> &direction ) const override;
 
-  static double m_width;
+  double m_width;
 private:
   std::vector<TVector<2>> m_vertices;
 };

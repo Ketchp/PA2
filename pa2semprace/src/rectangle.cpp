@@ -16,7 +16,7 @@ CRectangle::CRectangle( int id, TVector<2> centrePoint,
 
 void CRectangle::render( const CWindow &win ) const
 {
-  win.drawLine( left(), right(), m_size[ 1 ] );
+  win.drawLine( left(), right(), m_size[ 1 ], tags );
 }
 
 TManifold CRectangle::getManifold( CObject *other )
@@ -97,6 +97,9 @@ TVector<2> CRectangle::rectangleClosestPoint( const TVector<2> &point ) const
 
 double CRectangle::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const
 {
+  if( CObject::rayTrace( position, direction ) == HUGE_VAL )
+    return HUGE_VAL;
+
   TMatrix<2, 4> corn = corners();
   double min = HUGE_VAL;
   bool negative = false;

@@ -7,7 +7,8 @@ struct TPhysicsAttributes
   TPhysicsAttributes( double mass, double angularMass );
   static TPhysicsAttributes rectangleAttributes( double density, double width, double height );
   static TPhysicsAttributes circleAttributes( double density, double radius );
-  static TPhysicsAttributes complexObjectAttributes( double density,
+  static TPhysicsAttributes complexObjectAttributes( double width,
+                                                     double density,
                                                      std::vector<TVector<2>> points,
                                                      TVector<2> centreOfMass );
   TVector<2> velocity;

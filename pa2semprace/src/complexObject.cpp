@@ -4,14 +4,19 @@
 
 using namespace std;
 
-double CComplexObject::m_width = 10;
 
-CComplexObject::CComplexObject( int id, vector<TVector<2>> vertices, double density )
-        : CPhysicsObject( id, calculateCentreOfMass( vertices ),
-                          TPhysicsAttributes::complexObjectAttributes( density, vertices,
-                                                                       calculateCentreOfMass( vertices ) ),
-                          0 ),
-          m_vertices( move( vertices ) )
+CComplexObject::CComplexObject( int id, double width )
+  : CPhysicsObject( id, {}, { HUGE_VAL, HUGE_VAL }, 0 ),
+    m_width( width )
+{}
+
+CComplexObject::CComplexObject( int id, vector<TVector<2>> vertices, double width, double density )
+  : CPhysicsObject( id, calculateCentreOfMass( vertices ),
+                    TPhysicsAttributes::complexObjectAttributes( width, density, vertices,
+                                                                 calculateCentreOfMass( vertices ) ),
+                    0 ),
+    m_width( width ),
+    m_vertices( move( vertices ) )
 {
   for( auto &vertex: m_vertices )
     vertex -= m_position;
@@ -151,5 +156,21 @@ void CComplexObject::addVertex( const TVector<2> &point )
 
 double CComplexObject::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const
 {
+  if( CObject::rayTrace( position, direction ) == HUGE_VAL )
+    return HUGE_VAL;
   return HUGE_VAL;
+}
+
+void CComplexObject::spawn( double density )
+{
+  TVector<2> massCentreOffset = calculateCentreOfMass( m_vertices );
+  m_position += massCentreOffset;
+  for( auto &vertex: m_vertices )
+    vertex -= massCentreOffset;
+
+  if( isnan( density ) )
+    return;
+
+  m_attributes = TPhysicsAttributes::complexObjectAttributes( m_width, density,
+                                                              m_vertices, {} );
 }

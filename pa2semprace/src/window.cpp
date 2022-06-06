@@ -131,6 +131,11 @@ void CWindow::resizeView( double left, double right, double bottom, double top )
   gluOrtho2D( left, right, bottom, top );
 }
 
+void CWindow::changeTitle( const std::string &title )
+{
+  glutSetWindowTitle( title.c_str() );
+}
+
 TVector<2> CWindow::resolveCoordinates( int x, int y ) const
 {
   double viewWidth = m_viewExtreme[ 0 ] - m_viewOrigin[ 0 ];
@@ -159,25 +164,50 @@ TVector<2> CWindow::getViewSize() const
 }
 
 
-void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint, double width ) const
+void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint,
+                        double width, ETag tags ) const
 {
 
   TVector<2> normal = crossProduct( endPoint - startPoint ).stretchedTo( width );
 
   glBegin( GL_QUADS );
+    if( tags & ETag::WIN_ZONE )
+    {
+      glTranslatef( 0, 0, -1 );
+      glColor4d( 0.1, 0.9, 0.1, 0.7 );
+    }
+
+    if( tags & ETag::NO_DRAW_ZONE )
+    {
+      glTranslatef( 0, 0, -2 );
+      glColor4d( 0.9, 0.1, 0.1, 0.7 );
+    }
     glVertex2d( (startPoint + normal)[ 0 ], (startPoint + normal)[ 1 ] );
     glVertex2d( (startPoint - normal)[ 0 ], (startPoint - normal)[ 1 ] );
     glVertex2d( (endPoint - normal)[ 0 ], (endPoint - normal)[ 1 ] );
     glVertex2d( (endPoint + normal)[ 0 ], (endPoint + normal)[ 1 ] );
+
+    if( tags & ETag::WIN_ZONE )
+    {
+      glTranslatef( 0, 0, 1 );
+      glColor3d( 1, 1, 1 );
+    }
+    if( tags & ETag::NO_DRAW_ZONE )
+    {
+      glTranslatef( 0, 0, 2 );
+      glColor3d( 1, 1, 1 );
+    }
+
   glEnd();
 }
 
-void CWindow::drawCircle( const TVector<2> &centre, double radius ) const
+void CWindow::drawCircle( const TVector<2> &centre, double radius, ETag tags ) const
 {
-  drawCircle( centre, radius, 0, M_PI * 2 );
+  drawCircle( centre, radius, 0, M_PI * 2, tags );
 }
 
-void CWindow::drawCircle( const TVector<2> &centre, double radius, double startAngle, double endAngle ) const
+void CWindow::drawCircle( const TVector<2> &centre, double radius,
+                          double startAngle, double endAngle, ETag ) const
 {
   static const size_t slices = 30;
   TVector<2> lever = TVector<2>::canonical( 0, radius ).rotated( startAngle );

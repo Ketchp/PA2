@@ -2,6 +2,7 @@
 
 using namespace std;
 
+
 CObject::CObject( int id, TVector<2> position )
   : m_id( id ), m_position( position )
 {}
@@ -14,6 +15,18 @@ void CObject::applyForce( double )
 
 void CObject::resetAccumulator()
 {}
+
+void CObject::addTag( ETag tag )
+{
+  tags |= tag;
+}
+
+double CObject::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const
+{
+  if( tags == WIN_ZONE )
+    return HUGE_VAL;
+  return NAN;
+}
 
 CPhysicsObject::CPhysicsObject( int id, TVector<2> position,
                                 const TPhysicsAttributes &attributes,

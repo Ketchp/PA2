@@ -26,6 +26,12 @@ void CPhysicsEngine::addField( CForceField field )
   m_fields.emplace_back( move( field ) );
 }
 
+void CPhysicsEngine::registerCollisionCallback(
+        const std::function<void(std::vector<TManifold>)> &callback )
+{
+  m_collisionCallback = callback;
+}
+
 void CPhysicsEngine::step( vector<CObject*> &objects, double dt )
 {
   accumulateForces( objects );
@@ -37,41 +43,13 @@ void CPhysicsEngine::step( vector<CObject*> &objects, double dt )
     m_collisionCallback( collisions );
 
   applyImpulses( collisions );
-
-  for( size_t i = 0; i < 0 /* todo 2 */; ++i )
-  {
-    resolveCollisions( collisions );
-    collisions = findCollisions( objects );
-  }
   resolveCollisions( collisions );
 
-
-//  size_t maxIterations = 5;
-//  vector<TManifold> collisions;
-//
-//  do
-//  {
-//     collisions = findCollisions( objects );
-//
-//    if( collisionCallback )
-//      collisionCallback( collisions );
-//
-//    resolveCollisions( collisions );
-//  } while( !collisions.empty() && --maxIterations );
-//
-//  for( auto &item: objects )
-//  {
-//    auto &physItem = dynamic_cast<CPhysicsObject &>( *item );
-//    if( physItem.m_attributes.mass == INFINITY )
-//      continue;
-//    physItem.m_attributes.forceAccumulator = { 0, 0 };
-//    for( const auto &field: m_fields )
-//      field.applyForce( physItem );
-//    item->m_position += physItem.m_attributes.forceAccumulator / physItem.m_attributes.mass;
-//  }
-//  updateObjectsOrder( objects );
-//  vector<pair<CObject *, CObject *>> overlappingBBx = getPossibleCollisions( objects );
-//  calculateDepths( overlappingBBx );
+  for( size_t iteration = 0; iteration < 1; ++iteration )
+  {
+    collisions = findCollisions( objects );
+    resolveCollisions( collisions );
+  }
 }
 
 void CPhysicsEngine::accumulateForces( vector<CObject *> &objects )
@@ -106,37 +84,46 @@ vector<TManifold> CPhysicsEngine::findCollisions( vector<CObject *> &objects )
 void CPhysicsEngine::applyImpulses( vector<TManifold> &manifolds )
 {
   for( auto &manifold: manifolds )
+  {
+    if( manifold.first->tags & ETag::ZONE ||
+        manifold.second->tags & ETag::ZONE )
+      continue;
     applyImpulse( manifold );
+  }
 }
 
 void CPhysicsEngine::applyImpulse( const TManifold &manifold )
 {
   for( const auto &contactPoint: manifold.contacts )
-    applyImpulse( manifold, contactPoint );
+    applyImpulse( *manifold.first, *manifold.second, contactPoint );
 }
 
-void CPhysicsEngine::applyImpulse( const TManifold &manifold, const TContactPoint &contactPoint )
+void CPhysicsEngine::applyImpulse( CPhysicsObject &first,
+                                   CPhysicsObject &second,
+                                   const TContactPoint &contactPoint )
 {
-  TVector<2> normalImpulse = getNormalImpulse( manifold, contactPoint );
+  TVector<2> normalImpulse = getNormalImpulse( first, second, contactPoint );
+  if( !normalImpulse )
+    return;
 
-  manifold.first->applyImpulse( normalImpulse, contactPoint.contactPoint );
-  manifold.second->applyImpulse( -normalImpulse, contactPoint.contactPoint );
+  first.applyImpulse( normalImpulse, contactPoint.contactPoint );
+  second.applyImpulse( -normalImpulse, contactPoint.contactPoint );
 
-  TVector<2> frictionImpulse = getFrictionImpulse( manifold, contactPoint );
-  double frictionCoefficientSq = manifold.first->m_attributes.frictionCoefficient
-          * manifold.second->m_attributes.frictionCoefficient;
+  TVector<2> frictionImpulse = getFrictionImpulse( first, second, contactPoint );
+  double frictionCoefficientSq = first.m_attributes.frictionCoefficient
+                              * second.m_attributes.frictionCoefficient;
 
   if( frictionImpulse.squareNorm() > frictionCoefficientSq * normalImpulse.squareNorm() )
     frictionImpulse.stretchTo( sqrt( frictionCoefficientSq ) * normalImpulse.norm() );
 
-  manifold.first->applyImpulse( frictionImpulse, contactPoint.contactPoint );
-  manifold.second->applyImpulse( -frictionImpulse, contactPoint.contactPoint );
+  first.applyImpulse( frictionImpulse, contactPoint.contactPoint );
+  second.applyImpulse( -frictionImpulse, contactPoint.contactPoint );
 }
 
-TVector<2> CPhysicsEngine::getNormalImpulse( const TManifold &manifold, const TContactPoint &contactPoint )
+TVector<2> CPhysicsEngine::getNormalImpulse( CPhysicsObject &first,
+                                             CPhysicsObject &second,
+                                             const TContactPoint &contactPoint )
 {
-  const auto &first = *manifold.first;
-  const auto &second = *manifold.second;
   const auto &firstAttr = first.m_attributes;
   const auto &secondAttr = second.m_attributes;
 
@@ -150,17 +137,17 @@ TVector<2> CPhysicsEngine::getNormalImpulse( const TManifold &manifold, const TC
   double elasticity = firstAttr.elasticity * secondAttr.elasticity;
   double velocityProjection = collisionNormal.dot( relativeVelocity );
   if( velocityProjection >= 0 )
-    return {};
+    return { NAN, NAN };
 
   return ( 1 + elasticity ) * velocityProjection *
          getCombinedInvMass( first, second, collisionPoint, collisionNormal ) *
          collisionNormal;
 }
 
-TVector<2> CPhysicsEngine::getFrictionImpulse( const TManifold &manifold, const TContactPoint &contactPoint )
+TVector<2> CPhysicsEngine::getFrictionImpulse( CPhysicsObject &first,
+                                               CPhysicsObject &second,
+                                               const TContactPoint &contactPoint )
 {
-  const auto &first = *manifold.first;
-  const auto &second = *manifold.second;
   const auto &firstAttr = first.m_attributes;
   const auto &secondAttr = second.m_attributes;
 
@@ -192,11 +179,6 @@ TVector<2> CPhysicsEngine::getRelativeVelocity( const CPhysicsObject &first,
 
 
 
-void CPhysicsEngine::resolveCollisions( vector<TManifold> & )
-{
-  // todo
-}
-
 double CPhysicsEngine::getCombinedInvMass( const CPhysicsObject &first,
                                            const CPhysicsObject &second,
                                            const TVector<2> &point,
@@ -224,5 +206,39 @@ double CPhysicsEngine::getObjectInvMass( const CPhysicsObject &object,
   return linearInvMass + angMass;
 }
 
+void CPhysicsEngine::resolveCollisions( std::vector<TManifold> &collisions )
+{
+  for( auto &collision: collisions )
+  {
+    if( collision.first->tags & ETag::ZONE ||
+        collision.second->tags & ETag::ZONE )
+      continue;
+    resolveCollision( collision );
+  }
+}
+
+void CPhysicsEngine::resolveCollision( const TManifold &collision )
+{
+  for( const auto &contactPoint: collision.contacts )
+    resolveCollision( *collision.first, *collision.second, contactPoint );
+}
+
+void CPhysicsEngine::resolveCollision( CPhysicsObject &first,
+                                       CPhysicsObject &second,
+                                       const TContactPoint &contact )
+{
+//  TVector<2> relativeVelocity = getRelativeVelocity( first, second, contact.contactPoint );
+//  TVector<2> collisionNormal = contact.overlapVector;
+//  if( collisionNormal.dot( relativeVelocity ) >= 0 )
+//    return;
+
+  double linearInvMass = 1 / ( first.m_attributes.invMass +
+                               second.m_attributes.invMass );
+  if( !isnormal( linearInvMass ) )
+    return;
+  first.m_position -= contact.overlapVector * linearInvMass * first.m_attributes.invMass;
+  second.m_position += contact.overlapVector * linearInvMass * second.m_attributes.invMass;
+
+}
 
 

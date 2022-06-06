@@ -14,7 +14,8 @@ CPainter::CPainter( std::function<void()> callback )
 void CPainter::start( int x, int y, vector<CObject *> &objects )
 {
   lastMousePosition = { (double)x, (double)y };
-  currentlyDrawn = new CComplexObject( 0, { lastMousePosition }, HUGE_VAL );
+  currentlyDrawn = new CComplexObject( 0, drawWidth );
+  currentlyDrawn->addVertex( lastMousePosition );
   for( auto object: objects )
     if( currentlyDrawn->getManifold( object ) )
     {
@@ -30,11 +31,11 @@ void CPainter::addPoint( int x, int y, const vector<CObject *> &objects )
 {
   TVector<2> newMousePosition = { (double)x, (double)y };
   TVector<2> direction = newMousePosition - lastMousePosition;
-  TVector<2> normal = crossProduct( direction ).stretchedTo( CComplexObject::m_width );
+  TVector<2> normal = crossProduct( direction ).stretchedTo( currentlyDrawn->m_width );
 
   double maxMoveLength = direction.norm();
   for( auto &startOffset: { normal,
-                            direction.stretchedTo( CComplexObject::m_width ),
+                            direction.stretchedTo( currentlyDrawn->m_width ),
                             -normal } )
   {
     for( const auto &object: objects )
