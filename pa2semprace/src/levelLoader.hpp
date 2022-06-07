@@ -6,6 +6,7 @@
 #include "painter.hpp"
 #include "circle.hpp"
 #include "rectangle.hpp"
+#include "text.hpp"
 #include "complexObject.hpp"
 #include <vector>
 
@@ -75,8 +76,9 @@ private:
       static ETag loadTags( const CJsonObject & );
       static ETag loadTag( const std::string & );
       static TVector<2> loadVector2D( const CJsonArray & );
-      void loadCircle( const CJsonObject &, int, double, ETag );
-      void loadRectangle( const CJsonObject &, int, double, ETag );
+      void loadCircle( const CJsonObject &, int, ETag );
+      void loadRectangle( const CJsonObject &, int, ETag );
+      void loadText( const CJsonObject &, int, ETag );
       static double loadDensity( const CJsonObject & );
       static double loadRotation( const CJsonObject & );
   void loadChecks( const CJsonArray & );

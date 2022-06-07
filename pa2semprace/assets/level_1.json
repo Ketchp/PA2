@@ -25,7 +25,10 @@
     { "id":  8, "type": "rectangle", "position": [ 500, 790 ], "size": [ 970,  10 ] },
     { "id":  9, "type": "rectangle", "position": [  10, 400 ], "size": [  10, 790 ] },
     { "id": 12, "type": "rectangle", "position": [ 900, 100 ], "size": [ 160, 160 ], "tag": "win zone" },
-    { "id": 13, "type": "rectangle", "position": [ 800, 400 ], "size": [ 370, 780 ], "tag": "no draw zone" }
+    { "id": 13, "type": "rectangle", "position": [ 800, 400 ], "size": [ 370, 780 ], "tag": "no draw zone" },
+    { "type": "text", "position": [ 500, 400 ], "text": "Make the ball touch the ground!" },
+    { "type": "text", "position": [ 500, 350 ], "text": "Draw with mouse" },
+    { "type": "text", "position": [ 500, 300 ], "text": "Restart with 'r'" }
   ],
   "checks":
   [

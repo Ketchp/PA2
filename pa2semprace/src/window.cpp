@@ -95,7 +95,7 @@ void CWindow::resizeWindowAction( int w, int h )
   double widthScale = w / viewWidth;
   double heightScale = h / viewHeight;
 
-  double scale = std::min( widthScale, heightScale );
+  m_scale = std::min( widthScale, heightScale );
 
   // Prevent a divide by zero, when window is too short
   // (you can't make a window of zero width).
@@ -111,10 +111,10 @@ void CWindow::resizeWindowAction( int w, int h )
   glLoadIdentity();
 
   // Set the viewport to be the entire window
-  glViewport( (GLint)( w - scale * viewWidth ) / 2,
-              (GLint)( h - scale * viewHeight ) / 2,
-              (GLint)( scale * viewWidth ),
-              (GLint)( scale * viewHeight ) );
+  glViewport( (GLint)( w - m_scale * viewWidth ) / 2,
+              (GLint)( h - m_scale * viewHeight ) / 2,
+              (GLint)( m_scale * viewWidth ),
+              (GLint)( m_scale * viewHeight ) );
 
   // Set the correct perspective.
   //gluPerspective( 60, ratio, 1, 100 );
@@ -165,7 +165,7 @@ TVector<2> CWindow::getViewSize() const
 
 
 void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint,
-                        double width, ETag tags ) const
+                        double width, ETag tags )
 {
 
   TVector<2> normal = crossProduct( endPoint - startPoint ).stretchedTo( width );
@@ -201,13 +201,13 @@ void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint
   glEnd();
 }
 
-void CWindow::drawCircle( const TVector<2> &centre, double radius, ETag tags ) const
+void CWindow::drawCircle( const TVector<2> &centre, double radius, ETag tags )
 {
   drawCircle( centre, radius, 0, M_PI * 2, tags );
 }
 
 void CWindow::drawCircle( const TVector<2> &centre, double radius,
-                          double startAngle, double endAngle, ETag ) const
+                          double startAngle, double endAngle, ETag )
 {
   static const size_t slices = 30;
   TVector<2> lever = TVector<2>::canonical( 0, radius ).rotated( startAngle );
@@ -227,3 +227,29 @@ void CWindow::drawCircle( const TVector<2> &centre, double radius,
 }
 
 CWindow *CWindow::instance = nullptr;
+
+void CWindow::setColor( float r, float g, float b )
+{
+  glColor3f( r, g, b );
+}
+
+void CWindow::drawText( const TVector<2> &position, const string &text )
+{
+  auto x = position[ 0 ],
+       y = position[ 1 ];
+
+  void *font = GLUT_BITMAP_TIMES_ROMAN_24;
+
+  double textWidth =
+          (double)( glutBitmapLength( font,
+                reinterpret_cast<const unsigned char *>(text.c_str()) )
+           + text.size() - 1 ) / m_scale;
+  x -= textWidth / 2;
+
+  for( const auto &c: text )
+  {
+    glRasterPos2d( x, y );
+    glutBitmapCharacter( font, c );
+    x += ( glutBitmapWidth( font, c ) + 1 ) / m_scale;
+  }
+}

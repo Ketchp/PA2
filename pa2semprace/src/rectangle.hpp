@@ -7,7 +7,7 @@ public:
   CRectangle( int, TVector<2> centrePoint,
               double width, double height,
               double rotation, double density );
-  void render( const CWindow & ) const override;
+  void render( CWindow & ) const override;
   CObject &rotate( double angle ) override;
   TManifold getManifold( CObject * ) override;
   TManifold getManifold( CRectangle * ) override;

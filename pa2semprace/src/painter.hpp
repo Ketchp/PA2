@@ -13,6 +13,7 @@ public:
   void start( int, int, std::vector<CObject *> & );
   void addPoint( int, int, const std::vector<CObject *> & );
   void stop( int, int, const std::vector<CObject *> & );
+  void reset();
 
   TVector<2> lastMousePosition{ NAN, NAN };
   static const double minDrawLength;

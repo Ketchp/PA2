@@ -16,6 +16,23 @@ void CObject::applyForce( double )
 void CObject::resetAccumulator()
 {}
 
+TManifold CObject::getManifold( CObject * )
+{
+  return { nullptr, nullptr };
+}
+TManifold CObject::getManifold( CRectangle * )
+{
+  return { nullptr, nullptr };
+}
+TManifold CObject::getManifold( CCircle * )
+{
+  return { nullptr, nullptr };
+}
+TManifold CObject::getManifold( CComplexObject * )
+{
+  return { nullptr, nullptr };
+}
+
 void CObject::addTag( ETag tag )
 {
   tags |= tag;

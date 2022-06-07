@@ -12,16 +12,18 @@ CCircle::CCircle( int id, TVector<2> centre, double size, double density )
           id( id )
 {}
 
-void CCircle::render( const CWindow &win ) const
+void CCircle::render( CWindow &win ) const
 {
   win.drawCircle( m_position, m_radius, tags );
-  glColor3f( 0, 0, 0 );
+  win.setColor( 0, 0, 0 );
   glTranslatef( 0, 0, 1 );
+
   win.drawLine( m_position,
                 m_position + TVector<2>::canonical( 0, m_radius ).rotated( m_rotation ),
-                m_radius / 25, tags );
+                m_radius / 25 );
+
   glTranslatef( 0, 0, -1 );
-  glColor3f( 1, 1, 1 );
+  win.setColor( 1, 1, 1 );
 }
 
 TManifold CCircle::getManifold( CObject *other )

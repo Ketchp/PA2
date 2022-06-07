@@ -47,13 +47,21 @@ void CLevelLoader::loadLevel( CWindow &levelWindow,
                               EActionType action )
 {
   m_levelWindow = &levelWindow;
+
   m_levelEngine = &levelPhysicsEngine;
+  m_levelEngine->reset();
+
   m_objects = &levelObjects;
-  m_checks = &levelChecks;
-  m_painter = &painter;
   for( auto object: *m_objects )
     delete object;
-  m_objects->resize( 0 );
+  m_objects->clear();
+
+  m_checks = &levelChecks;
+  m_checks->clear();
+
+  m_painter = &painter;
+  m_painter->reset();
+
 
   if( action == EActionType::nextLevel )
     m_currentLevelFileName = m_nextLevelFileName;
@@ -61,6 +69,7 @@ void CLevelLoader::loadLevel( CWindow &levelWindow,
   try
   {
     CJsonDocument json( m_currentLevelFileName );
+    cout << "Loading file:" << m_currentLevelFileName << endl;
 
     if( json.m_type != EJsonType::jsonObjectType )
       throw invalid_argument( "Level description must be json object.\n" );
@@ -174,13 +183,14 @@ void CLevelLoader::loadItem( const CJsonObject &itemDescription )
 
   string itemType = itemDescription[ "type" ].toString();
 
-  double density = loadDensity( itemDescription );
   ETag tags = loadTags( itemDescription );
 
   if( itemType == "circle" )
-    loadCircle( itemDescription, itemID, density, tags );
+    loadCircle( itemDescription, itemID, tags );
   else if( itemType == "rectangle" )
-    loadRectangle( itemDescription, itemID, density, tags );
+    loadRectangle( itemDescription, itemID, tags );
+  else if( itemType == "text" )
+    loadText( itemDescription, itemID, tags );
 }
 
 int CLevelLoader::loadItemId( const CJsonObject &itemDescription )
@@ -222,9 +232,10 @@ TVector<2> CLevelLoader::loadVector2D( const CJsonArray &jsonArray )
 }
 
 void CLevelLoader::loadCircle( const CJsonObject &circleDescription,
-                               int id, double density, ETag tags )
+                               int id, ETag tags )
 {
   double radius = circleDescription[ "size" ].toDouble();
+  double density = loadDensity( circleDescription );
   TVector<2> position = loadVector2D( circleDescription[ "position" ].getArray() );
   CObject *newObj = new CCircle( id, position, radius, density );
   newObj->addTag( tags );
@@ -233,14 +244,24 @@ void CLevelLoader::loadCircle( const CJsonObject &circleDescription,
 }
 
 void CLevelLoader::loadRectangle( const CJsonObject &rectDescription,
-                                  int id, double density, ETag tags )
+                                  int id, ETag tags )
 {
   TVector<2> size = loadVector2D( rectDescription[ "size" ].getArray() );
+  double density = loadDensity( rectDescription );
   TVector<2> position = loadVector2D( rectDescription[ "position" ].getArray() );
   double rotation = loadRotation( rectDescription );
   CObject *newObj = new CRectangle( id, position,
                                     size[ 0 ], size[ 1 ],
                                     rotation, density );
+  newObj->addTag( tags );
+  m_objects->push_back( newObj );
+}
+
+void CLevelLoader::loadText( const CJsonObject &textDescription, int id, ETag tags )
+{
+  TVector<2> position = loadVector2D( textDescription[ "position" ].getArray() );
+  string text = textDescription[ "text" ].toString();
+  CObject *newObj = new CText( id, position, text );
   newObj->addTag( tags );
   m_objects->push_back( newObj );
 }

@@ -14,7 +14,7 @@ CRectangle::CRectangle( int id, TVector<2> centrePoint,
           id( id )
 {}
 
-void CRectangle::render( const CWindow &win ) const
+void CRectangle::render( CWindow &win ) const
 {
   win.drawLine( left(), right(), m_size[ 1 ], tags );
 }

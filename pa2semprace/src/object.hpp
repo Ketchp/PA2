@@ -22,15 +22,15 @@ class CObject
 public:
   explicit CObject( int id, TVector<2> position );
   virtual ~CObject() = default;
-  virtual void render( const CWindow & ) const = 0;
+  virtual void render( CWindow & ) const = 0;
   virtual CObject &rotate( double ) = 0;
   virtual void resetAccumulator();
   virtual void accumulateForce( const CForceField & );
   virtual void applyForce( double );
-  virtual TManifold getManifold( CObject * ) = 0;
-  virtual TManifold getManifold( CRectangle * ) = 0;
-  virtual TManifold getManifold( CCircle * ) = 0;
-  virtual TManifold getManifold( CComplexObject * ) = 0;
+  virtual TManifold getManifold( CObject * );
+  virtual TManifold getManifold( CRectangle * );
+  virtual TManifold getManifold( CCircle * );
+  virtual TManifold getManifold( CComplexObject * );
 
   virtual double rayTrace( const TVector<2> &position,
                            const TVector<2> &direction ) const;
@@ -47,8 +47,8 @@ class CPhysicsObject : public CObject
 public:
   CPhysicsObject( int, TVector<2>, const TPhysicsAttributes &attributes, double );
   ~CPhysicsObject() override = default;
-  void render( const CWindow & ) const override = 0;
-  CObject &rotate( double ) override;
+  void render( CWindow & ) const override = 0;
+  CObject &rotate( double ) override = 0;
   void resetAccumulator() final;
   void accumulateForce( const CForceField & ) final;
   void applyForce( double ) final;

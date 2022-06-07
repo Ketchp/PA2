@@ -24,8 +24,10 @@ class CPhysicsEngine
 public:
   void step( std::vector<CObject *> &, double );
   void addField( CForceField );
-  void registerCollisionCallback( const std::function<void(std::vector<TManifold>)> &callback );
+  void reset();
+  void registerCollisionCallback( const std::function<bool(const std::vector<TManifold> &)> &callback );
 
+  size_t frame = 0;
 private:
   void accumulateForces( std::vector<CObject *> & );
   static void applyForces( std::vector<CObject *> &, double );
@@ -55,5 +57,5 @@ private:
                                   const TVector<2> &direction );
 
   std::vector<CForceField> m_fields;
-  std::function<void(std::vector<TManifold>)> m_collisionCallback;
+  std::function<bool(const std::vector<TManifold> &)> m_collisionCallback;
 };

@@ -7,7 +7,7 @@ public:
   CComplexObject( int id, double width );
   CComplexObject( int, std::vector<TVector<2>> vertices, double width, double density );
   void spawn( double density = NAN );
-  void render( const CWindow & ) const override;
+  void render( CWindow & ) const override;
   CObject &rotate( double angle ) override;
   TManifold getManifold( CObject * ) override;
   TManifold getManifold( CRectangle * ) override;

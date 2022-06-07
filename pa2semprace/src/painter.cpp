@@ -20,8 +20,7 @@ void CPainter::start( int x, int y, vector<CObject *> &objects )
     if( currentlyDrawn->getManifold( object ) )
     {
       delete currentlyDrawn;
-      currentlyDrawn = nullptr;
-      lastMousePosition = { NAN, NAN };
+      reset();
       return;
     }
   objects.push_back( currentlyDrawn );
@@ -63,6 +62,11 @@ void CPainter::stop( int x, int y, const std::vector<CObject *> &objects )
 {
   if( lastMousePosition.distance( { (double)x, (double)y } ) > minDrawLength / 2 )
     addPoint( x, y, objects );
+  reset();
+}
+
+void CPainter::reset()
+{
   lastMousePosition = { NAN, NAN };
   currentlyDrawn = nullptr;
 }

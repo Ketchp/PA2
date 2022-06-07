@@ -22,6 +22,12 @@ private:
   void nextFrame();
   void clickHandler( int button, int state, int x, int y );
   void moveHandler( int x, int y );
+  bool checkCollisions( const std::vector<TManifold> & );
+  bool checkCollision( const TManifold & );
+  static bool checkCollisionTagTag( const TCheck &, const TManifold & );
+  static bool checkCollisionTagId( const TCheck &, const TManifold & );
+  static bool checkCollisionIdId( const TCheck &, const TManifold & );
+  void keyChecks( unsigned char );
 
   bool m_paused = true;
   const int framerate = 100;

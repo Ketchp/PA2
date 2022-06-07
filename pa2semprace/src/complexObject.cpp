@@ -22,7 +22,7 @@ CComplexObject::CComplexObject( int id, vector<TVector<2>> vertices, double widt
     vertex -= m_position;
 }
 
-void CComplexObject::render( const CWindow &win ) const
+void CComplexObject::render( CWindow &win ) const
 {
   if( m_vertices.empty() )
     return;

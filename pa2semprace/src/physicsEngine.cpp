@@ -27,9 +27,15 @@ void CPhysicsEngine::addField( CForceField field )
 }
 
 void CPhysicsEngine::registerCollisionCallback(
-        const std::function<void(std::vector<TManifold>)> &callback )
+        const std::function<bool(const std::vector<TManifold> &)> &callback )
 {
   m_collisionCallback = callback;
+}
+
+void CPhysicsEngine::reset()
+{
+  frame = 0;
+  m_fields.clear();
 }
 
 void CPhysicsEngine::step( vector<CObject*> &objects, double dt )
@@ -39,8 +45,8 @@ void CPhysicsEngine::step( vector<CObject*> &objects, double dt )
 
   vector<TManifold> collisions = findCollisions( objects );
 
-  if( m_collisionCallback )
-    m_collisionCallback( collisions );
+  if( m_collisionCallback && m_collisionCallback( collisions ) )
+    return reset();
 
   applyImpulses( collisions );
   resolveCollisions( collisions );
@@ -50,6 +56,7 @@ void CPhysicsEngine::step( vector<CObject*> &objects, double dt )
     collisions = findCollisions( objects );
     resolveCollisions( collisions );
   }
+  ++frame;
 }
 
 void CPhysicsEngine::accumulateForces( vector<CObject *> &objects )

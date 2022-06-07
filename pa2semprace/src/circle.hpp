@@ -5,7 +5,7 @@ class CCircle : public CPhysicsObject
 {
 public:
   CCircle( int, TVector<2>, double size, double );
-  void render( const CWindow & ) const override;
+  void render( CWindow & ) const override;
   CObject &rotate( double angle ) override;
   TManifold getManifold( CObject * ) override;
   TManifold getManifold( CRectangle * ) override;
