@@ -15,16 +15,7 @@ CCircle::CCircle( TVector<2> centre, double size, double density )
 
 void CCircle::render( CWindow &win ) const
 {
-  win.drawCircle( m_position, m_radius, m_tag );
-  win.setColor( 0, 0, 0 );
-  glTranslatef( 0, 0, 1 );
-
-  win.drawLine( m_position,
-                m_position + TVector<2>::canonical( 0, m_radius ).rotated( m_rotation ),
-                m_radius / 25 );
-
-  glTranslatef( 0, 0, -1 );
-  win.setColor( 1, 1, 1 );
+  win.drawCircle( m_position, m_radius, m_rotation, m_tag );
 }
 
 TManifold CCircle::getManifold( CPhysicsObject *other )

@@ -9,7 +9,7 @@ CWindow::CWindow( int *argcPtr, char *argv[] )
 
   glutInit( argcPtr, argv );
   glutSetOption( GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS );
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+  glutInitDisplayMode( GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA );
   glutInitWindowPosition(100,100);
   glutInitWindowSize(320,320);
   m_windowID =  glutCreateWindow("Lighthouse3D - GLUT Tutorial");
@@ -167,7 +167,7 @@ TVector<2> CWindow::getViewSize() const
 void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint,
                         double width, ETag tags )
 {
-
+  applyPenColor( tags );
   TVector<2> normal = crossProduct( endPoint - startPoint ).stretchedTo( width );
 
   glBegin( GL_QUADS );
@@ -188,20 +188,16 @@ void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint
     }
 
   glEnd();
+  restorePenColor( tags );
 }
 
-void CWindow::drawCircle( const TVector<2> &centre, double radius, ETag tags )
+void CWindow::drawCircle( const TVector<2> &centre, double radius, double angle, ETag tags )
 {
-  drawCircle( centre, radius, 0, M_PI * 2, tags );
-}
-
-void CWindow::drawCircle( const TVector<2> &centre, double radius,
-                          double startAngle, double endAngle, ETag )
-{
+  applyPenColor( tags );
   static const size_t slices = 30;
-  TVector<2> lever = TVector<2>::canonical( 0, radius ).rotated( startAngle );
+  TVector<2> lever = TVector<2>::canonical( 0, radius );
   TMatrix<2,2> rotationMatrix =
-          TMatrix<2,2>::rotationMatrix2D( ( endAngle - startAngle ) / slices );
+          TMatrix<2,2>::rotationMatrix2D( 2 * M_PI / slices );
 
   glBegin( GL_TRIANGLE_FAN );
   glVertex2d( centre[ 0 ], centre[ 1 ] );
@@ -213,6 +209,28 @@ void CWindow::drawCircle( const TVector<2> &centre, double radius,
   }
 
   glEnd();
+
+  if( isnan( angle ) )
+  {
+    restorePenColor( tags );
+    return;
+  }
+
+  glBegin( GL_LINES );
+  glColor3d( 0, 0, 0 );
+  glTranslatef( 0, 0, 1 );
+
+  glVertex2d( centre[0], centre[1] );
+
+  lever = TVector<2>::canonical( 0, radius ).rotated( angle );
+  glVertex2d( centre[0] + lever[0], centre[1] + lever[1] );
+
+
+  glTranslatef( 0, 0, -1 );
+  glColor3d( 1, 1, 1 );
+  glEnd();
+
+  restorePenColor( tags );
 }
 
 CWindow *CWindow::instance = nullptr;
@@ -265,13 +283,21 @@ void CWindow::applyPenColor( ETag tags )
     r = 0.1;
     g = 0.9;
     b = 0.1;
-    glTranslatef( 0, 0, 2 );
+    glTranslatef( 0, 0, 0.4 );
   }
 
   glColor4d( r, g, b, a );
 }
 
-void CWindow::restorePenColor( ETag )
+void CWindow::restorePenColor( ETag tags )
 {
+  if( tags & ETag::TRANSPARENT )
+    glTranslatef( 0, 0, 0.1 );
+
+  if( tags & ETag::NON_SOLID )
+    glTranslatef( 0, 0, 0.2 );
+
+  if( tags & ETag::TARGET )
+    glTranslatef( 0, 0, -0.4 );
 
 }

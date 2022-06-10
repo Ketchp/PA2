@@ -26,11 +26,11 @@ void CComplexObject::render( CWindow &win ) const
 {
   if( m_vertices.empty() )
     return;
-  win.drawCircle( m_position + m_vertices[ 0 ], m_width );
+  win.drawCircle( m_position + m_vertices[ 0 ], m_width, NAN, m_tag );
   for( size_t idx = 1; idx < m_vertices.size(); ++idx )
   {
     win.drawLine( m_position + m_vertices[ idx - 1 ], m_position + m_vertices[ idx ], m_width );
-    win.drawCircle( m_position + m_vertices[ idx ], m_width );
+    win.drawCircle( m_position + m_vertices[ idx ], m_width, m_tag );
   }
 }
 

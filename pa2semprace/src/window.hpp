@@ -47,10 +47,9 @@ public:
 
   void drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint,
                  double, ETag = ETag::NONE );
-  void drawCircle( const TVector<2> &centre, double radius,
-                   ETag = ETag::NONE );
-  void drawCircle( const TVector<2> &centre, double radius,
-                   double startAngle, double endAngle,
+  void drawCircle( const TVector<2> &centre,
+                   double radius,
+                   double angle = NAN,
                    ETag = ETag::NONE );
 
   void drawText( const TVector<2> &position, const std::string &text );

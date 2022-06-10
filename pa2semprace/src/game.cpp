@@ -46,7 +46,6 @@ void CGame::nextFrame()
 
 
     long sleepTime = (long)frameLength - timeDiff;
-    cout << sleepTime << endl;
     m_window.registerTimerEvent( this, &CGame::nextFrame, max( sleepTime, 0l ) );
   }
   redraw();
@@ -101,6 +100,7 @@ void CGame::keyPress( unsigned char key, int x, int y )
 
 void CGame::clickHandler( int button, int state, int x, int y )
 {
+  cout << "[" << x << ", " << y << "]" << endl;
   if( button == GLUT_LEFT_BUTTON )
   {
     if( state == GLUT_DOWN )

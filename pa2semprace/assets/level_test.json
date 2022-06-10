@@ -24,7 +24,7 @@
     { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
     { "type": "rectangle", "position": [ 500, 790 ], "size": [ 970,  10 ] },
     { "type": "rectangle", "position": [  10, 400 ], "size": [  10, 790 ] },
-    { "type": "rectangle", "position": [ 900, 100 ], "size": [ 160, 160 ], "tag": "target" },
+    { "type": "rectangle", "position": [ 900, 100 ], "size": [ 160, 160 ], "tags": ["target", "non solid"] },
     { "type": "rectangle", "position": [ 800, 400 ], "size": [ 370, 780 ], "tag": "non solid" },
     { "type": "text", "position": [ 500, 400 ], "text": "Make the ball touch the ground!" },
     { "type": "text", "position": [ 500, 350 ], "text": "Draw with mouse" },
