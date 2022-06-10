@@ -9,6 +9,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <chrono>
 
 class CGame
 {
@@ -22,22 +23,20 @@ private:
   void nextFrame();
   void clickHandler( int button, int state, int x, int y );
   void moveHandler( int x, int y );
-  bool checkCollisions( const std::vector<TManifold> & );
-  bool checkCollision( const TManifold & );
-  static bool checkCollisionTagTag( const TCheck &, const TManifold & );
-  static bool checkCollisionTagId( const TCheck &, const TManifold & );
-  static bool checkCollisionIdId( const TCheck &, const TManifold & );
-  void keyChecks( unsigned char );
+  void start();
+  void pause();
+  static bool checkCollisions( const std::vector<TManifold> & );
+  static bool checkCollision( const TManifold & );
 
   bool m_paused = true;
-  const int framerate = 100;
+  const double frameLength = 20; //ms
+  long lastFrame = 0;
 
   CWindow m_window;
-  CLevelLoader m_levelLoader;
   CPhysicsEngine m_engine;
-  std::vector<CObject *> m_objects;
-  std::vector<TCheck> m_checks;
+  std::vector<CPhysicsObject *> m_objects;
+  std::vector<CText *> m_text;
   CPainter m_painter;
+  CLevelLoader m_levelLoader;
 };
 
-extern int frame;

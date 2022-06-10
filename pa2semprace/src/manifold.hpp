@@ -15,16 +15,16 @@ struct TContactPoint
 
 struct TManifold
 {
-  TManifold( CObject *first, CObject *second );
+  TManifold( CPhysicsObject *first, CPhysicsObject *second );
 
-  TManifold( CObject *first, CObject *second,
+  TManifold( CPhysicsObject *first, CPhysicsObject *second,
              TVector<2> overlapVector,
              TVector<2> contactPoint );
 
-  TManifold( CObject *first, CObject *second,
+  TManifold( CPhysicsObject *first, CPhysicsObject *second,
              const TContactPoint & );
 
-  TManifold( CObject *first, CObject *second,
+  TManifold( CPhysicsObject *first, CPhysicsObject *second,
              std::vector<TContactPoint> contacts );
 
   explicit operator bool() const

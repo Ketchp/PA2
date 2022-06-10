@@ -1,67 +1,34 @@
 #include "levelLoader.hpp"
 
 using namespace std;
-using collisionSubType = TCheck::subType::collisionType::collisionCondition;
 
-TCheck::TCheck( ECheckType type, EActionType action, unsigned char button )
-  : type( type ), action( action )
-{
-  spec.button = button;
-}
-
-TCheck::TCheck( ECheckType type, EActionType action, ETag tag1, ETag tag2 )
-  : type( type ), action( action )
-{
-  spec.collisionType.collisionCond = collisionSubType::TagTag;
-  spec.collisionType.first.tag = tag1;
-  spec.collisionType.second.tag = tag2;
-}
-
-TCheck::TCheck( ECheckType type, EActionType action, ETag tag, int id )
-  : type( type ), action( action )
-{
-  spec.collisionType.collisionCond = collisionSubType::TagId;
-  spec.collisionType.first.tag = tag;
-  spec.collisionType.second.id = id;
-
-}
-
-TCheck::TCheck( ECheckType type, EActionType action, int id1, int id2 )
-  : type( type ), action( action )
-{
-  spec.collisionType.collisionCond = collisionSubType::IdId;
-  spec.collisionType.first.id = id1;
-  spec.collisionType.second.id = id2;
-}
-
-
-CLevelLoader::CLevelLoader( string levelFileName )
-  : m_currentLevelFileName( move( levelFileName ) )
+CLevelLoader::CLevelLoader( CWindow &window,
+                            CPhysicsEngine &engine,
+                            std::vector<CPhysicsObject *> &objects,
+                            std::vector<CText *> &texts,
+                            CPainter &painter,
+                            string firstLevelName )
+  : m_currentLevelFileName( move( firstLevelName ) ),
+    m_window( window ),
+    m_engine( engine ),
+    m_objects( objects ),
+    m_texts( texts ),
+    m_painter( painter )
 {}
 
-void CLevelLoader::loadLevel( CWindow &levelWindow,
-                              CPhysicsEngine &levelPhysicsEngine,
-                              vector<CObject *> &levelObjects,
-                              vector<TCheck> &levelChecks,
-                              CPainter &painter,
-                              EActionType action )
+void CLevelLoader::loadLevel( EActionType action )
 {
-  m_levelWindow = &levelWindow;
+  m_engine.reset();
 
-  m_levelEngine = &levelPhysicsEngine;
-  m_levelEngine->reset();
-
-  m_objects = &levelObjects;
-  for( auto object: *m_objects )
+  for( auto object: m_objects )
     delete object;
-  m_objects->clear();
+  m_objects.clear();
 
-  m_checks = &levelChecks;
-  m_checks->clear();
+  for( auto text: m_texts )
+    delete text;
+  m_texts.clear();
 
-  m_painter = &painter;
-  m_painter->reset();
-
+  m_painter.reset();
 
   if( action == EActionType::nextLevel )
     m_currentLevelFileName = m_nextLevelFileName;
@@ -81,9 +48,6 @@ void CLevelLoader::loadLevel( CWindow &levelWindow,
 
     if( levelDescription.count( "items" ) )
       loadItems( levelDescription[ "items" ].getArray() );
-
-    if( levelDescription.count( "checks" ) )
-      loadChecks( levelDescription[ "checks" ].getArray() );
 
   }
   catch( invalid_argument &e )
@@ -108,17 +72,17 @@ void CLevelLoader::loadScene( const CJsonObject &sceneDescription )
 void CLevelLoader::loadTitle( const CJsonObject &sceneDescription )
 {
   if( sceneDescription.count( "title" ) )
-    m_levelWindow->changeTitle( sceneDescription[ "title" ].toString() );
+    m_window.changeTitle( sceneDescription[ "title" ].toString() );
   else
-    m_levelWindow->changeTitle( "Gravity falls" );
+    m_window.changeTitle( "Gravity falls" );
 }
 
 void CLevelLoader::loadSceneSize( const CJsonObject &sceneDescription )
 {
   if( !sceneDescription.count( "size" ) )
   {
-    m_levelWindow->resizeView( 0, 800,
-                               0, 600 );
+    m_window.resizeView( 0, 800,
+                         0, 600 );
     return;
   }
 
@@ -126,8 +90,8 @@ void CLevelLoader::loadSceneSize( const CJsonObject &sceneDescription )
   if( sceneSize.size() != 2 )
     throw invalid_argument( "Scene size must be array of size 2." );
 
-  m_levelWindow->resizeView( 0, sceneSize[ 0 ].toDouble(),
-                             0, sceneSize[ 1 ].toDouble() );
+  m_window.resizeView( 0, sceneSize[ 0 ].toDouble(),
+                       0, sceneSize[ 1 ].toDouble() );
 }
 
 void CLevelLoader::loadFields( const CJsonArray &fieldsDescription )
@@ -140,27 +104,22 @@ void CLevelLoader::loadField( const CJsonValue &fieldDescription )
 {
   if( fieldDescription.m_type == EJsonType::jsonStringType )
     if( fieldDescription.getJsonString().toString() == "gravity" )
-      m_levelEngine->addField( CForceField::gravitationalField() );
+      m_engine.addField( CForceField::gravitationalField() );
 }
 
 void CLevelLoader::loadPenAttributes( const CJsonObject &sceneDescription )
 {
+  m_painter.drawWidth = 8;
+  m_painter.density = 50;
   if( !sceneDescription.count( "pen" ) )
-  {
-    m_painter->drawWidth = 8;
-    m_painter->density = 50;
     return;
-  }
+
   const auto &penDescription = sceneDescription[ "pen" ].getObject();
   if( penDescription.count( "density" ) )
-    m_painter->density = penDescription[ "density" ].toDouble();
-  else
-    m_painter->density = 50;
+    m_painter.density = penDescription[ "density" ].toDouble();
 
   if( penDescription.count( "width" ) )
-    m_painter->drawWidth = penDescription[ "width" ].toDouble();
-  else
-    m_painter->drawWidth = 8;
+    m_painter.drawWidth = penDescription[ "width" ].toDouble();
 }
 
 void CLevelLoader::loadNextFileName( const CJsonObject &sceneDescription )
@@ -179,25 +138,16 @@ void CLevelLoader::loadItems( const CJsonArray &itemsDescription )
 
 void CLevelLoader::loadItem( const CJsonObject &itemDescription )
 {
-  int itemID = loadItemId( itemDescription );
-
   string itemType = itemDescription[ "type" ].toString();
 
   ETag tags = loadTags( itemDescription );
 
   if( itemType == "circle" )
-    loadCircle( itemDescription, itemID, tags );
+    loadCircle( itemDescription, tags );
   else if( itemType == "rectangle" )
-    loadRectangle( itemDescription, itemID, tags );
+    loadRectangle( itemDescription, tags );
   else if( itemType == "text" )
-    loadText( itemDescription, itemID, tags );
-}
-
-int CLevelLoader::loadItemId( const CJsonObject &itemDescription )
-{
-  if( itemDescription.count( "id" ) )
-    return itemDescription[ "id" ].toInt();
-  return idPool--;
+    loadText( itemDescription, tags );
 }
 
 ETag CLevelLoader::loadTags( const CJsonObject &itemDescription )
@@ -217,12 +167,13 @@ ETag CLevelLoader::loadTags( const CJsonObject &itemDescription )
 
 ETag CLevelLoader::loadTag( const std::string &tag )
 {
-  if( tag == "win zone" )
-    return WIN_ZONE;
-  else if( tag == "no draw zone" )
-    return NO_DRAW_ZONE;
-  else
-    return NONE;
+  if( tag == "transparent" )
+    return TRANSPARENT;
+  if( tag == "non solid" )
+    return NON_SOLID;
+  if( tag == "target" )
+    return TARGET;
+  return NONE;
 }
 
 
@@ -232,38 +183,37 @@ TVector<2> CLevelLoader::loadVector2D( const CJsonArray &jsonArray )
 }
 
 void CLevelLoader::loadCircle( const CJsonObject &circleDescription,
-                               int id, ETag tags )
+                               ETag tags )
 {
   double radius = circleDescription[ "size" ].toDouble();
   double density = loadDensity( circleDescription );
   TVector<2> position = loadVector2D( circleDescription[ "position" ].getArray() );
-  CObject *newObj = new CCircle( id, position, radius, density );
+  CPhysicsObject *newObj = new CCircle( position, radius, density );
   newObj->addTag( tags );
-  m_objects->push_back( newObj );
+  m_objects.push_back( newObj );
 
 }
 
 void CLevelLoader::loadRectangle( const CJsonObject &rectDescription,
-                                  int id, ETag tags )
+                                  ETag tags )
 {
-  TVector<2> size = loadVector2D( rectDescription[ "size" ].getArray() );
-  double density = loadDensity( rectDescription );
   TVector<2> position = loadVector2D( rectDescription[ "position" ].getArray() );
+  TVector<2> size = loadVector2D( rectDescription[ "size" ].getArray() );
   double rotation = loadRotation( rectDescription );
-  CObject *newObj = new CRectangle( id, position,
-                                    size[ 0 ], size[ 1 ],
-                                    rotation, density );
+  double density = loadDensity( rectDescription );
+  CPhysicsObject *newObj = new CRectangle( position, size,
+                                           rotation, density );
   newObj->addTag( tags );
-  m_objects->push_back( newObj );
+  m_objects.push_back( newObj );
 }
 
-void CLevelLoader::loadText( const CJsonObject &textDescription, int id, ETag tags )
+void CLevelLoader::loadText( const CJsonObject &textDescription, ETag tags )
 {
   TVector<2> position = loadVector2D( textDescription[ "position" ].getArray() );
   string text = textDescription[ "text" ].toString();
-  CObject *newObj = new CText( id, position, text );
+  auto *newObj = new CText( position, text );
   newObj->addTag( tags );
-  m_objects->push_back( newObj );
+  m_texts.push_back( newObj );
 }
 
 double CLevelLoader::loadDensity( const CJsonObject &itemDescription )
@@ -279,101 +229,3 @@ double CLevelLoader::loadRotation( const CJsonObject &itemDescription )
     return itemDescription[ "rotation" ].toDouble();
   return 0;
 }
-
-void CLevelLoader::loadChecks( const CJsonArray &checksDescription )
-{
-  for( size_t idx = 0; idx < checksDescription.size(); ++idx )
-    loadCheck( checksDescription[ idx ].getObject() );
-}
-
-void CLevelLoader::loadCheck( const CJsonObject &checkDescription )
-{
-  if( !checkDescription.count( "checkType" ) )
-    throw invalid_argument( "Check must contain checkType field." );
-
-  string checkType = checkDescription[ "checkType" ].toString();
-  if( checkType == "key press" )
-    loadCheckPress( checkDescription );
-  else if( checkType == "collision" )
-    loadCheckCollision( checkDescription );
-  else
-    cerr << "Warning: Unknown check type... skipping" << endl;
-}
-
-EActionType CLevelLoader::loadCheckAction( const CJsonObject &checkDescription )
-{
-  if( !checkDescription.count( "action" ) )
-    return EActionType::nextLevel;
-  string action = checkDescription[ "action" ].toString();
-  if( action == "reset" )
-    return EActionType::resetLevel;
-  else if( action == "next" )
-    return EActionType::nextLevel;
-  throw invalid_argument( "Unknown action type \"" + action + "\"" );
-}
-
-void CLevelLoader::loadCheckPress( const CJsonObject &checkDescription )
-{
-  unsigned char key = checkDescription[ "key" ].toString()[ 0 ];
-  EActionType action = loadCheckAction( checkDescription );
-
-  m_checks->push_back( { ECheckType::keyPress, action, key } );
-}
-
-void CLevelLoader::loadCheckCollision( const CJsonObject &checkDescription )
-{
-  collisionSubType checkCollisionType = loadCheckCollisionType( checkDescription );
-  switch( checkCollisionType )
-  {
-  case collisionSubType::TagTag:
-    loadCheckTagTag( checkDescription );
-    break;
-  case collisionSubType::TagId:
-    loadCheckTagId( checkDescription );
-    break;
-  case collisionSubType::IdId:
-    loadCheckIdId( checkDescription );
-  }
-}
-
-collisionSubType
-CLevelLoader::loadCheckCollisionType( const CJsonObject &checkDescription )
-{
-  if( !checkDescription.count( "collisionType" ) )
-    return collisionSubType::TagTag;
-  string type = checkDescription[ "collisionType" ].toString();
-  if( type == "IdId" )
-    return collisionSubType::IdId;
-  if( type == "TagId" )
-    return collisionSubType::TagId;
-  if( type == "TagTag" )
-    return collisionSubType::TagTag;
-  throw invalid_argument( "Unknown collision check subtype." );
-}
-
-void CLevelLoader::loadCheckTagTag( const CJsonObject &checkDescription )
-{
-  // todo
-}
-
-void CLevelLoader::loadCheckTagId( const CJsonObject &checkDescription )
-{
-  int id = loadCheckId( checkDescription );
-  EActionType action = loadCheckAction( checkDescription );
-
-  m_checks->push_back( { ECheckType::collision, action, ETag::WIN_ZONE, id } );
-}
-
-int CLevelLoader::loadCheckId( const CJsonObject &checkDescription )
-{
-  if( !checkDescription.count( "id" ) )
-    return 0;
-  return checkDescription[ "id" ].toInt();
-}
-
-void CLevelLoader::loadCheckIdId( const CJsonObject &checkDescription )
-{
-  // todo
-}
-
-

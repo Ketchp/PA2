@@ -1,23 +1,25 @@
 #pragma once
-#include "object.hpp"
+#include "physicsObject.hpp"
 
 class CComplexObject : public CPhysicsObject
 {
 public:
-  CComplexObject( int id, double width );
-  CComplexObject( int, std::vector<TVector<2>> vertices, double width, double density );
-  void spawn( double density = NAN );
+  explicit CComplexObject( double width );
+  CComplexObject( std::vector<TVector<2>> vertices, double width, double density );
+  void spawn( double density = HUGE_VAL );
   void render( CWindow & ) const override;
-  CObject &rotate( double angle ) override;
-  TManifold getManifold( CObject * ) override;
+
+  TManifold getManifold( CPhysicsObject * ) override;
   TManifold getManifold( CRectangle * ) override;
   TManifold getManifold( CCircle * ) override;
   TManifold getManifold( CComplexObject * ) override;
-  static TVector<2> calculateCentreOfMass( const std::vector<TVector<2>> &vertices );
-  void addVertex( const TVector<2> & );
 
+  CPhysicsObject &rotate( double angle ) override;
   double rayTrace( const TVector<2> &position,
                    const TVector<2> &direction ) const override;
+
+  void addVertex( const TVector<2> & );
+  static TVector<2> calculateCentreOfMass( const std::vector<TVector<2>> &vertices );
 
   double m_width;
 private:

@@ -1,13 +1,13 @@
 #pragma once
-#include "object.hpp"
+#include "physicsObject.hpp"
 
 class CCircle : public CPhysicsObject
 {
 public:
-  CCircle( int, TVector<2>, double size, double );
+  CCircle( TVector<2>, double size, double density );
   void render( CWindow & ) const override;
-  CObject &rotate( double angle ) override;
-  TManifold getManifold( CObject * ) override;
+  CPhysicsObject &rotate( double angle ) override;
+  TManifold getManifold( CPhysicsObject * ) override;
   TManifold getManifold( CRectangle * ) override;
   TManifold getManifold( CCircle * ) override;
   TManifold getManifold( CComplexObject * ) override;
@@ -16,7 +16,6 @@ public:
                    const TVector<2> &direction ) const override;
 
   double m_radius;
-  int id;
 };
 
 

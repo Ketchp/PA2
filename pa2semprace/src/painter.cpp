@@ -11,10 +11,10 @@ CPainter::CPainter( std::function<void()> callback )
   : redrawCallback( move( callback ) )
 {}
 
-void CPainter::start( int x, int y, vector<CObject *> &objects )
+void CPainter::start( int x, int y, vector<CPhysicsObject *> &objects )
 {
   lastMousePosition = { (double)x, (double)y };
-  currentlyDrawn = new CComplexObject( 0, drawWidth );
+  currentlyDrawn = new CComplexObject( drawWidth );
   currentlyDrawn->addVertex( lastMousePosition );
   for( auto object: objects )
     if( currentlyDrawn->getManifold( object ) )
@@ -26,7 +26,7 @@ void CPainter::start( int x, int y, vector<CObject *> &objects )
   objects.push_back( currentlyDrawn );
 }
 
-void CPainter::addPoint( int x, int y, const vector<CObject *> &objects )
+void CPainter::addPoint( int x, int y, const vector<CPhysicsObject *> &objects )
 {
   TVector<2> newMousePosition = { (double)x, (double)y };
   TVector<2> direction = newMousePosition - lastMousePosition;
@@ -58,10 +58,11 @@ void CPainter::addPoint( int x, int y, const vector<CObject *> &objects )
   redrawCallback();
 }
 
-void CPainter::stop( int x, int y, const std::vector<CObject *> &objects )
+void CPainter::stop( int x, int y, const std::vector<CPhysicsObject *> &objects )
 {
   if( lastMousePosition.distance( { (double)x, (double)y } ) > minDrawLength / 2 )
     addPoint( x, y, objects );
+  currentlyDrawn->spawn( 50 );
   reset();
 }
 

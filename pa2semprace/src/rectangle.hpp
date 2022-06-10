@@ -1,15 +1,15 @@
 #pragma once
-#include "object.hpp"
+#include "physicsObject.hpp"
 
 class CRectangle : public CPhysicsObject
 {
 public:
-  CRectangle( int, TVector<2> centrePoint,
-              double width, double height,
+  CRectangle( TVector<2> centrePoint,
+              TVector<2> size,
               double rotation, double density );
   void render( CWindow & ) const override;
-  CObject &rotate( double angle ) override;
-  TManifold getManifold( CObject * ) override;
+  CPhysicsObject &rotate( double angle ) override;
+  TManifold getManifold( CPhysicsObject * ) override;
   TManifold getManifold( CRectangle * ) override;
   TManifold getManifold( CCircle * ) override;
   TManifold getManifold( CComplexObject * ) override;
@@ -25,9 +25,8 @@ public:
   [[nodiscard]] TMatrix<2, 4> corners() const;
 
 
-  // vector from object centre to top-left corner
+  // vector from object centre to top-right corner
   TVector<2> m_size;
-  int id;
 };
 
 

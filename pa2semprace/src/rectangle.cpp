@@ -2,32 +2,35 @@
 #include "circle.hpp"
 #include "complexObject.hpp"
 
-CRectangle::CRectangle( int id, TVector<2> centrePoint,
-                        double width, double height,
+using namespace std;
+using namespace collision;
+
+CRectangle::CRectangle( TVector<2> centrePoint,
+                        TVector<2> size,
                         double rotation, double density )
-        : CPhysicsObject( id, centrePoint,
-                          TPhysicsAttributes::rectangleAttributes( density,
-                                                                   width,
-                                                                   height ),
-                          rotation ),
-          m_size{ width / 2, height / 2 },
-          id( id )
-{}
+  : CPhysicsObject( centrePoint,
+                    TPhysicsAttributes::rectangleAttributes( density,
+                                                             size ),
+                    rotation ),
+    m_size{ size / 2 }
+{
+  m_boundingRadius = m_size.norm();
+}
 
 void CRectangle::render( CWindow &win ) const
 {
-  win.drawLine( left(), right(), m_size[ 1 ], tags );
+  win.drawLine( left(), right(), m_size[ 1 ], m_tag );
 }
 
-TManifold CRectangle::getManifold( CObject *other )
+TManifold CRectangle::getManifold( CPhysicsObject *other )
 {
   return other->getManifold( this );
 }
 
 TManifold CRectangle::getManifold( CRectangle *other )
 {
-  TContactPoint contact = rectRectCollision( m_position, m_size, m_rotation,
-                                             other->m_position, other->m_size, other->m_rotation );
+  TContactPoint contact = rectRect( m_position, m_size, m_rotation,
+                                    other->m_position, other->m_size, other->m_rotation );
   if( !contact.contactPoint )
     return { nullptr, nullptr };
   return { this, other, contact };
@@ -35,8 +38,8 @@ TManifold CRectangle::getManifold( CRectangle *other )
 
 TManifold CRectangle::getManifold( CCircle *circle )
 {
-  TContactPoint contact = rectCircleCollision( m_position, m_size, m_rotation,
-                                               circle->m_position, circle->m_radius );
+  TContactPoint contact = rectCircle( m_position, m_size, m_rotation,
+                                      circle->m_position, circle->m_radius );
 
   if( !contact.contactPoint )
     return { nullptr, nullptr };
@@ -49,10 +52,9 @@ TManifold CRectangle::getManifold( CComplexObject *other )
   return other->getManifold( this );
 }
 
-CObject &CRectangle::rotate( double angle )
+CPhysicsObject &CRectangle::rotate( double angle )
 {
-  CPhysicsObject::rotate( angle );
-  return *this;
+  return CPhysicsObject::rotate( angle );
 }
 
 TVector<2> CRectangle::left() const
@@ -97,7 +99,7 @@ TVector<2> CRectangle::rectangleClosestPoint( const TVector<2> &point ) const
 
 double CRectangle::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const
 {
-  if( CObject::rayTrace( position, direction ) == HUGE_VAL )
+  if( CPhysicsObject::rayTrace( position, direction ) == HUGE_VAL )
     return HUGE_VAL;
 
   TMatrix<2, 4> corn = corners();

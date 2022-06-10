@@ -21,7 +21,8 @@ public:
   unsigned int registerDrawEvent( type *cl, void(type::*callback)() );
 
   template <typename type, typename ...types>
-  unsigned int registerTimerEvent( type *cl, void(type::*callback)( types... ), types... values, int time_ms );
+  unsigned int registerTimerEvent( type *cl, void(type::*callback)( types... ),
+                                   types... values, unsigned int time_ms );
 
   template <typename type>
   unsigned int registerKeyEvent( type *cl, void(type::*callback)( unsigned char, int, int ) );
@@ -54,7 +55,9 @@ public:
 
   void drawText( const TVector<2> &position, const std::string &text );
 
-  void setColor( float, float, float );
+  void applyPenColor( ETag );
+  void restorePenColor( ETag );
+
 
   void resizeView( double left,
                    double right,
@@ -112,7 +115,7 @@ unsigned int
 CWindow::registerTimerEvent( type *cl,
                              void(type::*callback)( types... ),
                              types... values,
-                             int time_ms )
+                             unsigned int time_ms )
 {
   static int timerHandlerId = 0;
   timerEventCallbacks.emplace( timerHandlerId, [cl, callback, values... ](){ (cl->*callback)( values... ); } );

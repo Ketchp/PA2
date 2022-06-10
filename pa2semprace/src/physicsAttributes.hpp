@@ -5,7 +5,7 @@
 struct TPhysicsAttributes
 {
   TPhysicsAttributes( double mass, double angularMass );
-  static TPhysicsAttributes rectangleAttributes( double density, double width, double height );
+  static TPhysicsAttributes rectangleAttributes( double density, const TVector<2> &size );
   static TPhysicsAttributes circleAttributes( double density, double radius );
   static TPhysicsAttributes complexObjectAttributes( double width,
                                                      double density,

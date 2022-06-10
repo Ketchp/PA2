@@ -3,18 +3,19 @@
 #include "complexObject.hpp"
 
 using namespace std;
+using namespace collision;
 
-CCircle::CCircle( int id, TVector<2> centre, double size, double density )
-        : CPhysicsObject( id, centre,
-                          TPhysicsAttributes::circleAttributes( density, size ),
-                          0 ),
-          m_radius( size ),
-          id( id )
-{}
+CCircle::CCircle( TVector<2> centre, double size, double density )
+        : CPhysicsObject( centre,
+                          TPhysicsAttributes::circleAttributes( density, size ) ),
+          m_radius( size )
+{
+  m_boundingRadius = size;
+}
 
 void CCircle::render( CWindow &win ) const
 {
-  win.drawCircle( m_position, m_radius, tags );
+  win.drawCircle( m_position, m_radius, m_tag );
   win.setColor( 0, 0, 0 );
   glTranslatef( 0, 0, 1 );
 
@@ -26,7 +27,7 @@ void CCircle::render( CWindow &win ) const
   win.setColor( 1, 1, 1 );
 }
 
-TManifold CCircle::getManifold( CObject *other )
+TManifold CCircle::getManifold( CPhysicsObject *other )
 {
   return other->getManifold( this );
 }
@@ -38,8 +39,8 @@ TManifold CCircle::getManifold( CRectangle *line )
 
 TManifold CCircle::getManifold( CCircle *other )
 {
-  TContactPoint contact = circleCircleCollision( m_position, m_radius,
-                                                 other->m_position, other->m_radius );
+  TContactPoint contact = circleCircle( m_position, m_radius,
+                                        other->m_position, other->m_radius );
   if( !contact.contactPoint )
     return { nullptr, nullptr };
   return { this, other, contact };
@@ -50,15 +51,14 @@ TManifold CCircle::getManifold( CComplexObject *other )
   return other->getManifold( this );
 }
 
-CObject &CCircle::rotate( double angle )
+CPhysicsObject &CCircle::rotate( double angle )
 {
-  m_rotation += angle;
-  return *this;
+  return CPhysicsObject::rotate( angle );
 }
 
 double CCircle::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const
 {
-  if( CObject::rayTrace( position, direction ) == HUGE_VAL )
+  if( CPhysicsObject::rayTrace( position, direction ) == HUGE_VAL )
     return HUGE_VAL;
   TVector<2> unit = direction.normalized();
   TVector<2> chordHeight = ( m_position - position ).rejectedFrom( unit );

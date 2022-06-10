@@ -2,6 +2,7 @@
 #include "linearAlgebra.hpp"
 #include "physicsAttributes.hpp"
 #include "manifold.hpp"
+#include "forceField.hpp"
 #include <vector>
 #include <memory>
 #include <functional>
@@ -9,29 +10,19 @@
 #include <numeric>
 #include <set>
 
-class CForceField
-{
-public:
-  explicit CForceField( std::function<void(CPhysicsObject &)> );
-  void applyForce( CPhysicsObject & ) const;
-  static CForceField gravitationalField( double g = 50 );
-  std::function<void(CPhysicsObject &)> m_fieldFunctor;
-};
-
 
 class CPhysicsEngine
 {
 public:
-  void step( std::vector<CObject *> &, double );
+  std::vector<TManifold> step( std::vector<CPhysicsObject *> &, double );
   void addField( CForceField );
   void reset();
-  void registerCollisionCallback( const std::function<bool(const std::vector<TManifold> &)> &callback );
 
   size_t frame = 0;
 private:
-  void accumulateForces( std::vector<CObject *> & );
-  static void applyForces( std::vector<CObject *> &, double );
-  static std::vector<TManifold> findCollisions( std::vector<CObject *> & );
+  void accumulateForces( std::vector<CPhysicsObject *> & );
+  static void applyForces( std::vector<CPhysicsObject *> &, double );
+  static std::vector<TManifold> findCollisions( std::vector<CPhysicsObject *> & );
   static void resolveCollisions( std::vector<TManifold> & );
   static void resolveCollision( const TManifold & );
   static void resolveCollision( CPhysicsObject &, CPhysicsObject &,
@@ -57,5 +48,4 @@ private:
                                   const TVector<2> &direction );
 
   std::vector<CForceField> m_fields;
-  std::function<bool(const std::vector<TManifold> &)> m_collisionCallback;
 };

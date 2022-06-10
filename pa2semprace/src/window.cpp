@@ -171,30 +171,19 @@ void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint
   TVector<2> normal = crossProduct( endPoint - startPoint ).stretchedTo( width );
 
   glBegin( GL_QUADS );
-    if( tags & ETag::WIN_ZONE )
-    {
-      glTranslatef( 0, 0, -1 );
-      glColor4d( 0.1, 0.9, 0.1, 0.7 );
-    }
-
-    if( tags & ETag::NO_DRAW_ZONE )
-    {
-      glTranslatef( 0, 0, -2 );
-      glColor4d( 0.9, 0.1, 0.1, 0.7 );
-    }
     glVertex2d( (startPoint + normal)[ 0 ], (startPoint + normal)[ 1 ] );
     glVertex2d( (startPoint - normal)[ 0 ], (startPoint - normal)[ 1 ] );
     glVertex2d( (endPoint - normal)[ 0 ], (endPoint - normal)[ 1 ] );
     glVertex2d( (endPoint + normal)[ 0 ], (endPoint + normal)[ 1 ] );
 
-    if( tags & ETag::WIN_ZONE )
+    if( tags & ETag::TARGET )
     {
-      glTranslatef( 0, 0, 1 );
+      glTranslatef( 0, 0, -2 );
       glColor3d( 1, 1, 1 );
     }
-    if( tags & ETag::NO_DRAW_ZONE )
+    if( tags & ETag::TRANSPARENT )
     {
-      glTranslatef( 0, 0, 2 );
+      glTranslatef( 0, 0, 1 );
       glColor3d( 1, 1, 1 );
     }
 
@@ -228,11 +217,6 @@ void CWindow::drawCircle( const TVector<2> &centre, double radius,
 
 CWindow *CWindow::instance = nullptr;
 
-void CWindow::setColor( float r, float g, float b )
-{
-  glColor3f( r, g, b );
-}
-
 void CWindow::drawText( const TVector<2> &position, const string &text )
 {
   auto x = position[ 0 ],
@@ -252,4 +236,42 @@ void CWindow::drawText( const TVector<2> &position, const string &text )
     glutBitmapCharacter( font, c );
     x += ( glutBitmapWidth( font, c ) + 1 ) / m_scale;
   }
+}
+
+void CWindow::applyPenColor( ETag tags )
+{
+  double r = 1,
+         g = 1,
+         b = 1,
+         a = 1;
+
+  if( tags & ETag::TRANSPARENT )
+  {
+    a = 0.3;
+    glTranslatef( 0, 0, -0.1 );
+  }
+
+
+  if( tags & ETag::NON_SOLID )
+  {
+    r = 0.9;
+    g = 0.1;
+    b = 0.1;
+    glTranslatef( 0, 0, -0.2 );
+  }
+
+  if( tags & ETag::TARGET )
+  {
+    r = 0.1;
+    g = 0.9;
+    b = 0.1;
+    glTranslatef( 0, 0, 2 );
+  }
+
+  glColor4d( r, g, b, a );
+}
+
+void CWindow::restorePenColor( ETag )
+{
+
 }

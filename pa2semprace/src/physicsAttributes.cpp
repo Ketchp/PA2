@@ -2,10 +2,11 @@
 
 using namespace std;
 
-TPhysicsAttributes TPhysicsAttributes::rectangleAttributes( double density, double width, double height )
+TPhysicsAttributes TPhysicsAttributes::rectangleAttributes( double density,
+                                                            const TVector<2> &size )
 {
-  double mass = density * width * height;
-  double angularMass = mass * ( height * height + width * width ) / 12;
+  double mass = density * size[ 0 ] * size[ 1 ];
+  double angularMass = mass * ( size[ 0 ] * size[ 0 ] + size[ 1 ] * size[ 1 ] ) / 12;
   return { mass, angularMass };
 }
 

@@ -3,33 +3,10 @@
 
 using namespace std;
 
-CForceField::CForceField( function<void(CPhysicsObject &)> functor )
-  : m_fieldFunctor( move(functor) )
-{}
-
-void CForceField::applyForce( CPhysicsObject &obj ) const
-{
-  m_fieldFunctor( obj );
-}
-
-CForceField CForceField::gravitationalField( double g )
-{
-  return CForceField( [g]( CPhysicsObject &object )
-  {
-    object.m_attributes.forceAccumulator += g * object.m_attributes.mass * TVector<2>{ 0, -1 };
-  } );
-}
-
 
 void CPhysicsEngine::addField( CForceField field )
 {
   m_fields.emplace_back( move( field ) );
-}
-
-void CPhysicsEngine::registerCollisionCallback(
-        const std::function<bool(const std::vector<TManifold> &)> &callback )
-{
-  m_collisionCallback = callback;
 }
 
 void CPhysicsEngine::reset()
@@ -38,52 +15,58 @@ void CPhysicsEngine::reset()
   m_fields.clear();
 }
 
-void CPhysicsEngine::step( vector<CObject*> &objects, double dt )
+vector<TManifold> CPhysicsEngine::step( vector<CPhysicsObject*> &objects, double dt )
 {
   accumulateForces( objects );
   applyForces( objects, dt );
 
-  vector<TManifold> collisions = findCollisions( objects );
+  vector<TManifold> allCollisions = findCollisions( objects );
 
-  if( m_collisionCallback && m_collisionCallback( collisions ) )
-    return reset();
-
-  applyImpulses( collisions );
-  resolveCollisions( collisions );
+  applyImpulses( allCollisions );
+  resolveCollisions( allCollisions );
 
   for( size_t iteration = 0; iteration < 1; ++iteration )
   {
-    collisions = findCollisions( objects );
+    vector<TManifold> collisions = findCollisions( objects );
     resolveCollisions( collisions );
+    allCollisions.insert( allCollisions.end(), collisions.begin(), collisions.end() );
   }
   ++frame;
+  return allCollisions;
 }
 
-void CPhysicsEngine::accumulateForces( vector<CObject *> &objects )
+void CPhysicsEngine::accumulateForces( vector<CPhysicsObject *> &objects )
 {
   for( auto &item: objects )
   {
     item->resetAccumulator();
     for( const auto &field: m_fields )
-      item->accumulateForce( field );
+      field.applyForce( *item );
   }
 }
 
-void CPhysicsEngine::applyForces( vector<CObject *> &objects, double dt )
+void CPhysicsEngine::applyForces( vector<CPhysicsObject *> &objects, double dt )
 {
   for( auto &item: objects )
     item->applyForce( dt );
 }
 
-vector<TManifold> CPhysicsEngine::findCollisions( vector<CObject *> &objects )
+vector<TManifold> CPhysicsEngine::findCollisions( vector<CPhysicsObject *> &objects )
 {
   vector<TManifold> collisions;
+  for( size_t a = 0; a < objects.size(); ++a )
+    for( size_t b = a + 1; b < objects.size(); ++b  )
+    {
+      if( objects[a]->m_boundingRadius + objects[b]->m_boundingRadius <
+              ( objects[a]->m_position - objects[b]->m_position ).norm() )
+        continue;
+      TManifold collision = objects[a]->getManifold( objects[b] );
+      if( collision )
+        collisions.push_back( collision );
+    }
   for( auto firstIt = objects.begin(); firstIt != objects.end(); ++firstIt )
     for( auto secondIt = firstIt + 1; secondIt != objects.end(); ++secondIt )
     {
-      TManifold collision = (*firstIt)->getManifold( *secondIt );
-      if( collision )
-        collisions.push_back( collision );
     }
   return collisions;
 }
@@ -92,8 +75,8 @@ void CPhysicsEngine::applyImpulses( vector<TManifold> &manifolds )
 {
   for( auto &manifold: manifolds )
   {
-    if( manifold.first->tags & ETag::ZONE ||
-        manifold.second->tags & ETag::ZONE )
+    if( manifold.first->m_tag & ETag::NON_SOLID ||
+        manifold.second->m_tag & ETag::NON_SOLID )
       continue;
     applyImpulse( manifold );
   }
@@ -217,8 +200,8 @@ void CPhysicsEngine::resolveCollisions( std::vector<TManifold> &collisions )
 {
   for( auto &collision: collisions )
   {
-    if( collision.first->tags & ETag::ZONE ||
-        collision.second->tags & ETag::ZONE )
+    if( collision.first->m_tag & ETag::NON_SOLID ||
+        collision.second->m_tag & ETag::NON_SOLID )
       continue;
     resolveCollision( collision );
   }

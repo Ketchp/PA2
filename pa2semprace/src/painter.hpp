@@ -2,17 +2,15 @@
 #include "linearAlgebra.hpp"
 #include <vector>
 #include <functional>
-#include "object.hpp"
-
-class CGame;
+#include "physicsObject.hpp"
 
 class CPainter
 {
 public:
   explicit CPainter( std::function<void()> );
-  void start( int, int, std::vector<CObject *> & );
-  void addPoint( int, int, const std::vector<CObject *> & );
-  void stop( int, int, const std::vector<CObject *> & );
+  void start( int, int, std::vector<CPhysicsObject *> & );
+  void addPoint( int, int, const std::vector<CPhysicsObject *> & );
+  void stop( int, int, const std::vector<CPhysicsObject *> & );
   void reset();
 
   TVector<2> lastMousePosition{ NAN, NAN };

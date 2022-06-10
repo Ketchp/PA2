@@ -13,26 +13,13 @@
   },
   "items":
   [
-    { "id":  1, "type": "circle",    "position": [ 230, 700 ], "size": 60, "physics": { "density": 50 } },
-    { "id": 10, "type": "circle",    "position": [ 730, 700 ], "size": 60, "physics": { "density": 50 } },
-    { "id": 11, "type": "circle",    "position": [ 830, 600 ], "size": 60, "physics": { "density": 50 } },
-    { "id":  2, "type": "rectangle", "position": [ 200, 200 ], "size": [ 120,  8 ], "rotation": -0.7, "physics": { "density": 80 } },
-    { "id":  3, "type": "rectangle", "position": [ 380, 150 ], "size": [ 300, 15 ], "rotation": 0.2, "physics": { "density": 80 } },
-    { "id":  4, "type": "rectangle", "position": [ 300, 770 ], "size": [ 200, 20 ], "rotation": 0.0, "physics": { "density": 80 } },
-    { "id":  5, "type": "rectangle", "position": [ 750, 200 ], "size": [ 200,  5 ], "rotation": -0.2, "physics": { "density": 10 } },
-    { "id":  6, "type": "rectangle", "position": [ 500,  10 ], "size": [ 970,  10 ] },
-    { "id":  7, "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
-    { "id":  8, "type": "rectangle", "position": [ 500, 790 ], "size": [ 970,  10 ] },
-    { "id":  9, "type": "rectangle", "position": [  10, 400 ], "size": [  10, 790 ] },
-    { "id": 12, "type": "rectangle", "position": [ 900, 100 ], "size": [ 160, 160 ], "tag": "win zone" },
-    { "id": 13, "type": "rectangle", "position": [ 800, 400 ], "size": [ 370, 780 ], "tag": "no draw zone" },
+    { "type": "circle",    "position": [ 500, 600 ], "size": 20, "physics": { "density": 50 }, "tag": "target" },
+    { "type": "rectangle", "position": [ 500,  10 ], "size": [ 970,  10 ], "tag": "target" },
+    { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
+    { "type": "rectangle", "position": [ 500, 790 ], "size": [ 970,  10 ] },
+    { "type": "rectangle", "position": [  10, 400 ], "size": [  10, 790 ] },
     { "type": "text", "position": [ 500, 400 ], "text": "Make the ball touch the ground!" },
     { "type": "text", "position": [ 500, 350 ], "text": "Draw with mouse" },
     { "type": "text", "position": [ 500, 300 ], "text": "Restart with 'r'" }
-  ],
-  "checks":
-  [
-    { "checkType": "key press", "key": "r", "action": "reset" },
-    { "checkType": "collision", "collisionType": "TagId", "id": 1 }
   ]
 }
