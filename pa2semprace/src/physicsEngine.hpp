@@ -26,7 +26,7 @@ private:
   static void resolveCollisions( std::vector<TManifold> & );
   static void resolveCollision( const TManifold & );
   static void resolveCollision( CPhysicsObject &, CPhysicsObject &,
-                                const TContactPoint & );
+                                TVector<2> );
   static void applyImpulses( std::vector<TManifold> & );
   static void applyImpulse( const TManifold & );
   static void applyImpulse( CPhysicsObject &, CPhysicsObject &,

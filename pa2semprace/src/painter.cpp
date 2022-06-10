@@ -14,20 +14,30 @@ CPainter::CPainter( std::function<void()> callback )
 void CPainter::start( int x, int y, vector<CPhysicsObject *> &objects )
 {
   lastMousePosition = { (double)x, (double)y };
-  currentlyDrawn = new CComplexObject( drawWidth );
-  currentlyDrawn->addVertex( lastMousePosition );
-  for( auto object: objects )
-    if( currentlyDrawn->getManifold( object ) )
+
+  size_t rayCount = 8;
+  for( size_t idx = 0; idx < rayCount; ++idx )
+  {
+    auto dir =
+            TVector<2>::canonical( 0 ).rotated( 2 * M_PI * (double)idx / (double)rayCount );
+    for( auto object: objects )
     {
-      delete currentlyDrawn;
+      if( object->rayTrace( lastMousePosition, dir ) > drawWidth )
+        continue;
       reset();
       return;
     }
+  }
+
+  currentlyDrawn = new CComplexObject( drawWidth );
+  currentlyDrawn->addVertex( lastMousePosition );
   objects.push_back( currentlyDrawn );
 }
 
 void CPainter::addPoint( int x, int y, const vector<CPhysicsObject *> &objects )
 {
+  if( !currentlyDrawn )
+    return;
   TVector<2> newMousePosition = { (double)x, (double)y };
   TVector<2> direction = newMousePosition - lastMousePosition;
   TVector<2> normal = crossProduct( direction ).stretchedTo( currentlyDrawn->m_width );
@@ -60,9 +70,11 @@ void CPainter::addPoint( int x, int y, const vector<CPhysicsObject *> &objects )
 
 void CPainter::stop( int x, int y, const std::vector<CPhysicsObject *> &objects )
 {
+  if( !currentlyDrawn )
+    return;
   if( lastMousePosition.distance( { (double)x, (double)y } ) > minDrawLength / 2 )
     addPoint( x, y, objects );
-  currentlyDrawn->spawn( 50 );
+  currentlyDrawn->spawn( density );
   reset();
 }
 

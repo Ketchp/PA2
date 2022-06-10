@@ -5,7 +5,6 @@ class CComplexObject : public CPhysicsObject
 {
 public:
   explicit CComplexObject( double width );
-  CComplexObject( std::vector<TVector<2>> vertices, double width, double density );
   void spawn( double density = HUGE_VAL );
   void render( CWindow & ) const override;
 

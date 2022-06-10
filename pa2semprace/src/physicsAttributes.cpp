@@ -18,11 +18,11 @@ TPhysicsAttributes TPhysicsAttributes::circleAttributes( double density, double 
 
 TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double width,
                                                                 double density,
-                                                                vector<TVector<2>> points,
-                                                                TVector<2> centreOfMass )
+                                                                vector<TVector<2>> points )
 {
   if( points.size() < 2 )
-    return { density * M_PI * 100, M_PI * density * 10000 / 2 };
+    return { density * M_PI * width * width,
+             M_PI * density * width * width * width * width / 2 };
 
   double mass = 0, segmentMass;
   double angularMass = 0;
@@ -33,8 +33,7 @@ TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double width,
     double segmentLength = segmentDirection.norm();
     mass += segmentMass = segmentLength * density;
     double localAngularMass = segmentMass * segmentDirection.squareNorm() / 12;
-    TVector<2> segmentCentreOffset = centreOfMass - segmentCentre;
-    angularMass += localAngularMass + mass * segmentCentreOffset.squareNorm();
+    angularMass += localAngularMass + mass * segmentCentre.squareNorm();
   }
   return { mass, angularMass };
 }

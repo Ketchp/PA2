@@ -209,13 +209,16 @@ void CPhysicsEngine::resolveCollisions( std::vector<TManifold> &collisions )
 
 void CPhysicsEngine::resolveCollision( const TManifold &collision )
 {
+  TVector<2> overlapVector;
   for( const auto &contactPoint: collision.contacts )
-    resolveCollision( *collision.first, *collision.second, contactPoint );
+    overlapVector += contactPoint.overlapVector;
+  overlapVector /= (double)collision.contacts.size() * 2;
+  resolveCollision( *collision.first, *collision.second, overlapVector );
 }
 
 void CPhysicsEngine::resolveCollision( CPhysicsObject &first,
                                        CPhysicsObject &second,
-                                       const TContactPoint &contact )
+                                       TVector<2> overlapVector )
 {
 //  TVector<2> relativeVelocity = getRelativeVelocity( first, second, contact.contactPoint );
 //  TVector<2> collisionNormal = contact.overlapVector;
@@ -226,8 +229,8 @@ void CPhysicsEngine::resolveCollision( CPhysicsObject &first,
                                second.m_attributes.invMass );
   if( !isnormal( linearInvMass ) )
     return;
-  first.m_position -= contact.overlapVector * linearInvMass * first.m_attributes.invMass;
-  second.m_position += contact.overlapVector * linearInvMass * second.m_attributes.invMass;
+  first.m_position -= overlapVector * linearInvMass * first.m_attributes.invMass;
+  second.m_position += overlapVector * linearInvMass * second.m_attributes.invMass;
 
 }
 

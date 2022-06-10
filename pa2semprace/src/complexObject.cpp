@@ -10,18 +10,6 @@ CComplexObject::CComplexObject( double width )
     m_width( width )
 {}
 
-CComplexObject::CComplexObject( vector<TVector<2>> vertices, double width, double density )
-  : CPhysicsObject( calculateCentreOfMass( vertices ),
-                    TPhysicsAttributes::complexObjectAttributes( width, density, vertices,
-                                                                 calculateCentreOfMass( vertices ) ),
-                    0 ),
-    m_width( width ),
-    m_vertices( move( vertices ) )
-{
-  for( auto &vertex: m_vertices )
-    vertex -= m_position;
-}
-
 void CComplexObject::render( CWindow &win ) const
 {
   if( m_vertices.empty() )
@@ -30,7 +18,7 @@ void CComplexObject::render( CWindow &win ) const
   for( size_t idx = 1; idx < m_vertices.size(); ++idx )
   {
     win.drawLine( m_position + m_vertices[ idx - 1 ], m_position + m_vertices[ idx ], m_width );
-    win.drawCircle( m_position + m_vertices[ idx ], m_width, m_tag );
+    win.drawCircle( m_position + m_vertices[ idx ], m_width, NAN, m_tag );
   }
 }
 
@@ -63,23 +51,12 @@ TManifold CComplexObject::getManifold( CRectangle *rect )
     return { nullptr, nullptr };
 
   vector<TContactPoint> contacts;
+  vector<size_t> collidingFaces;
 
-  for( const auto &vertex: m_vertices )
+  for( size_t idx = 1; idx < m_vertices.size(); ++idx )
   {
-    TContactPoint contact = rectCircle( rect->m_position,
-                                        rect->m_size,
-                                        rect->m_rotation,
-                                        vertex + m_position, m_width );
-    if( !contact.contactPoint )
-      continue;
-    contacts.push_back( contact );
-  }
-
-  for( auto it = m_vertices.begin() + 1;
-       it != m_vertices.end(); ++it )
-  {
-    const auto &begin = *( it - 1 );
-    const auto &end = *it;
+    const auto &begin = m_vertices[ idx - 1 ];
+    const auto &end = m_vertices[ idx ];
     const auto direction = end - begin;
     TContactPoint contact = rectRect( rect->m_position,
                                       rect->m_size,
@@ -87,6 +64,25 @@ TManifold CComplexObject::getManifold( CRectangle *rect )
                                       m_position + ( begin + end ) / 2,
                                       { direction.norm() / 2, m_width },
                                       direction.getAngle() );
+    if( !contact.contactPoint )
+      continue;
+    contacts.push_back( contact );
+    collidingFaces.push_back( idx - 1 );
+  }
+
+  auto faceIt = collidingFaces.begin();
+  for( size_t idx = 0; idx < m_vertices.size(); ++idx )
+  {
+    if( faceIt != collidingFaces.end() && ( *faceIt == idx || *faceIt == idx ) )
+    {
+      idx = *faceIt + 1;
+      ++faceIt;
+      continue;
+    }
+    TContactPoint contact = rectCircle( rect->m_position,
+                                        rect->m_size,
+                                        rect->m_rotation,
+                                        m_vertices[ idx ] + m_position, m_width );
     if( !contact.contactPoint )
       continue;
     contacts.push_back( contact );
@@ -144,8 +140,9 @@ TManifold CComplexObject::getManifold( CComplexObject *other )
 
 CPhysicsObject &CComplexObject::rotate( double angle )
 {
+  auto rot = TMatrix<2,2>::rotationMatrix2D( angle );
   for( TVector<2> &vertex: m_vertices )
-    vertex =  TMatrix<2,2>::rotationMatrix2D( angle ) * vertex;
+    vertex = rot * vertex;
   return *this;
 }
 
@@ -169,8 +166,8 @@ void CComplexObject::spawn( double density )
   for( auto &vertex: m_vertices )
   {
     vertex -= massCentreOffset;
-    if( vertex.norm() > m_boundingRadius )
-      m_boundingRadius = vertex.norm();
+    if( vertex.norm() + m_width > m_boundingRadius )
+      m_boundingRadius = vertex.norm() + m_width;
   }
 
   if( isnan( density ) )
@@ -179,5 +176,5 @@ void CComplexObject::spawn( double density )
   }
 
   m_attributes = TPhysicsAttributes::complexObjectAttributes( m_width, density,
-                                                              m_vertices, {} );
+                                                              m_vertices );
 }
