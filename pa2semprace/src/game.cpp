@@ -49,6 +49,8 @@ void CGame::nextFrame()
     m_levelLoader.loadLevel( EActionType::nextLevel );
     pause();
   }
+  if( m_levelLoader.healthBar && !playerOnScreen() )
+    keyPress( 'r', 0, 0 );
   setTimer();
   redraw();
 }
@@ -112,7 +114,7 @@ void CGame::mainLoop()
   m_window.mainLoop();
 }
 
-void CGame::keyPress( unsigned char key, int x, int y )
+void CGame::keyPress( unsigned char key, int, int )
 {
   if( key == 'p' )
     m_paused ? start() : pause();
@@ -190,4 +192,19 @@ void CGame::setTimer()
 
   long sleepTime = (long)frameLength - timeDiff;
   m_window.registerTimerEvent( this, &CGame::nextFrame, max( sleepTime, 0l ) );
+}
+
+bool CGame::playerOnScreen()
+{
+  for( const auto &obj: m_objects )
+  {
+    if( !( obj->m_tag & ETag::PLAYER ) )
+      continue;
+
+    TVector<2> screenSize = m_window.getViewSize();
+    if( obj->m_position[ 0 ] < 0 || obj->m_position[ 1 ] < 0
+        || obj->m_position[ 0 ] > screenSize[ 0 ] || obj->m_position[ 1 ] > screenSize[ 1 ] )
+      return false;
+  }
+  return true;
 }

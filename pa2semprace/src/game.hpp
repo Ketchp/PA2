@@ -53,6 +53,8 @@ private:
 
   [[nodiscard]] bool checkPlayerHealth() const;
 
+  [[nodiscard]] bool playerOnScreen();
+
   bool m_paused = true;
   bool pressed = false;
   const double frameLength = 40; //ms

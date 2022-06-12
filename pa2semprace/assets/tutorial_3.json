@@ -7,7 +7,7 @@
     "pen":
     {
       "width": 10,
-      "density": 50
+      "density": 250
     },
     "next": "assets/level_1.json"
   },
