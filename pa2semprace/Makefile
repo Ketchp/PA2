@@ -1,7 +1,7 @@
 CXX = g++
-CXXFLAGS = -g -Wall -std=c++17 -pedantic -Wno-long-long -Werror -fsanitize=address
+CXXFLAGS = -g -Wall -std=c++17 -pedantic -Wno-long-long -Werror
 
-LXXFALGS = -I/usr/include -L/usr/lib/x86_64-linux-gnu -fsanitize=address
+LXXFALGS = -I/usr/include -L/usr/lib/x86_64-linux-gnu
 
 LIBS = -lglut -lGLU -lGL
 
@@ -20,7 +20,6 @@ deps:
 
 $(TARGET_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
-
 
 $(TARGET_DIR)/$(TARGET): \
 $(TARGET_DIR)/circle.o \
@@ -49,7 +48,7 @@ $(TARGET_DIR)/jsonParser.o \
 $(TARGET_DIR)/linearAlgebra.o
 	g++ -o examples/tests/tester -g -Wall -std=c++17 -pedantic \
  -Wno-long-long -Werror $^ examples/tests/tester.cpp
-	( cd ./examples/tests && exec ./tester )
+	( cd ./examples/tests && exec valgrind --leak-check=full ./tester )
 
 .PHONY: run
 run:

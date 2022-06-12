@@ -2,17 +2,18 @@
 #include "circle.hpp"
 #include "complexObject.hpp"
 
+
 using namespace std;
 using namespace collision;
 
 CRectangle::CRectangle( TVector<2> centrePoint,
                         TVector<2> size,
                         double rotation, double density )
-  : CPhysicsObject( centrePoint,
-                    TPhysicsAttributes::rectangleAttributes( density,
-                                                             size ),
-                    rotation ),
-    m_size{ size / 2 }
+        : CPhysicsObject( centrePoint,
+                          TPhysicsAttributes::rectangleAttributes( density,
+                                                                   size ),
+                          rotation ),
+          m_size{ size / 2 }
 {
   m_boundingRadius = m_size.norm();
 }
@@ -101,14 +102,20 @@ double CRectangle::rayTrace( const TVector<2> &position, const TVector<2> &direc
 {
   if( CPhysicsObject::rayTrace( position, direction ) == HUGE_VAL )
     return HUGE_VAL;
+  return rayTrace( position, direction, corners() );
+}
 
-  TMatrix<2, 4> corn = corners();
+double CRectangle::rayTrace( const TVector<2> &position,
+                             const TVector<2> &direction,
+                             const TMatrix<2, 4> &rectCorners )
+{
   double min = HUGE_VAL;
   bool negative = false;
   for( size_t idx = 0; idx < 4; ++idx )
   {
     double rayLen = rayTraceLineSeg( position, direction,
-                                     corn[ idx ], corn[ ( idx + 1 ) % 4 ] );
+                                     rectCorners[ idx ],
+                                     rectCorners[ ( idx + 1 ) % 4 ] );
     if( rayLen <= 0 )
       negative = true;
     else if( rayLen < min )

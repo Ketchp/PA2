@@ -1,5 +1,6 @@
 #include "levelLoader.hpp"
 
+
 using namespace std;
 
 CLevelLoader::CLevelLoader( CWindow &window,
@@ -8,13 +9,12 @@ CLevelLoader::CLevelLoader( CWindow &window,
                             std::vector<CText *> &texts,
                             CPainter &painter,
                             string firstLevelName )
-  : m_currentLevelFileName( move( firstLevelName ) ),
-    m_window( window ),
-    m_engine( engine ),
-    m_objects( objects ),
-    m_texts( texts ),
-    m_painter( painter )
-{}
+        : m_currentLevelFileName( move( firstLevelName ) ),
+          m_window( window ),
+          m_engine( engine ),
+          m_objects( objects ),
+          m_texts( texts ),
+          m_painter( painter ){}
 
 void CLevelLoader::loadLevel( EActionType action )
 {
@@ -30,13 +30,14 @@ void CLevelLoader::loadLevel( EActionType action )
 
   m_painter.reset();
 
+  hasPlayer = false;
+
   if( action == EActionType::nextLevel )
     m_currentLevelFileName = m_nextLevelFileName;
 
   try
   {
     CJsonDocument json( m_currentLevelFileName );
-    cout << "Loading file:" << m_currentLevelFileName << endl;
 
     if( json.m_type != EJsonType::jsonObjectType )
       throw invalid_argument( "Level description must be json object.\n" );
@@ -53,7 +54,7 @@ void CLevelLoader::loadLevel( EActionType action )
   catch( invalid_argument &e )
   {
     cerr << e.what();
-    throw invalid_argument( "Error parsing level file." );
+    throw invalid_argument( "Error parsing level file.\n" );
   }
 }
 
@@ -61,6 +62,10 @@ void CLevelLoader::loadScene( const CJsonObject &sceneDescription )
 {
   loadTitle( sceneDescription );
   loadSceneSize( sceneDescription );
+
+  healthBar = true;
+  if( sceneDescription.count( "bar" ) )
+    healthBar = (bool)sceneDescription[ "bar" ].getJsonBool();
 
   if( sceneDescription.count( "fields" ) )
     loadFields( sceneDescription[ "fields" ].getArray() );
@@ -153,7 +158,7 @@ void CLevelLoader::loadItem( const CJsonObject &itemDescription )
 ETag CLevelLoader::loadTags( const CJsonObject &itemDescription )
 {
   if( itemDescription.count( "tag" ) )
-    return loadTag( itemDescription[ "tag" ].toString());
+    return loadTag( itemDescription[ "tag" ].toString() );
   if( itemDescription.count( "tags" ) )
   {
     ETag tag( NONE );
@@ -173,6 +178,13 @@ ETag CLevelLoader::loadTag( const std::string &tag )
     return NON_SOLID;
   if( tag == "target" )
     return TARGET;
+  if( tag == "player" )
+  {
+    if( hasPlayer )
+      throw invalid_argument( "Level can contain only one player" );
+    hasPlayer = true;
+    return PLAYER;
+  }
   return NONE;
 }
 

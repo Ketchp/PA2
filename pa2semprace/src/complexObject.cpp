@@ -2,13 +2,13 @@
 #include "rectangle.hpp"
 #include "circle.hpp"
 
+
 using namespace std;
 using namespace collision;
 
 CComplexObject::CComplexObject( double width )
-  : CPhysicsObject( {}, { HUGE_VAL, HUGE_VAL } ),
-    m_width( width )
-{}
+        : CPhysicsObject( {}, { HUGE_VAL, HUGE_VAL } ),
+          m_width( width ){}
 
 void CComplexObject::render( CWindow &win ) const
 {
@@ -99,23 +99,11 @@ TManifold CComplexObject::getManifold( CCircle *circle )
     return { nullptr, nullptr };
 
   vector<TContactPoint> contacts;
-
-  for( const auto &vertex: m_vertices )
+  vector<size_t> collidingFaces;
+  for( size_t idx = 1; idx < m_vertices.size(); ++idx )
   {
-    TContactPoint contact = circleCircle( circle->m_position,
-                                          circle->m_radius,
-                                          vertex + m_position,
-                                          m_width );
-    if( !contact.contactPoint )
-      continue;
-    contacts.push_back( contact );
-  }
-
-  for( auto it = m_vertices.begin() + 1;
-       it != m_vertices.end(); ++it )
-  {
-    const auto &begin = *( it - 1 );
-    const auto &end = *it;
+    const auto &begin = m_vertices[ idx - 1 ];
+    const auto &end = m_vertices[ idx ];
     const auto direction = end - begin;
     TContactPoint contact = rectCircle( m_position + ( begin + end ) / 2,
                                         { direction.norm() / 2, m_width },
@@ -126,6 +114,25 @@ TManifold CComplexObject::getManifold( CCircle *circle )
       continue;
     contact.overlapVector *= -1;
     contacts.push_back( contact );
+    collidingFaces.push_back( idx - 1 );
+  }
+
+  auto faceIt = collidingFaces.begin();
+  for( size_t idx = 0; idx < m_vertices.size(); ++idx )
+  {
+    if( faceIt != collidingFaces.end() && ( *faceIt == idx || *faceIt == idx ) )
+    {
+      idx = *faceIt + 1;
+      ++faceIt;
+      continue;
+    }
+    TContactPoint contact = circleCircle( circle->m_position,
+                                          circle->m_radius,
+                                          m_vertices[ idx ] + m_position,
+                                          m_width );
+    if( !contact.contactPoint )
+      continue;
+    contacts.push_back( contact );
   }
 
   if( contacts.empty() )
@@ -135,12 +142,54 @@ TManifold CComplexObject::getManifold( CCircle *circle )
 
 TManifold CComplexObject::getManifold( CComplexObject *other )
 {
-  return { nullptr, nullptr }; // todo
+  if( m_vertices.empty() || other->m_vertices.empty() )
+    return { nullptr, nullptr };
+
+  vector<TContactPoint> contacts;
+
+  for( const auto &vertex: m_vertices )
+  {
+    auto newContacts = getNodeCollisions( other, m_position + vertex );
+    contacts.insert( contacts.end(), newContacts.begin(), newContacts.end() );
+  }
+
+  for( const auto &vertex: other->m_vertices )
+  {
+    auto newContacts = other->getNodeCollisions( this, other->m_position + vertex );
+    for_each( newContacts.begin(), newContacts.end(),
+              []( auto &elem ){ elem.overlapVector *= -1; } );
+    contacts.insert( contacts.end(), newContacts.begin(), newContacts.end() );
+  }
+
+
+  if( contacts.empty() )
+    return { nullptr, nullptr };
+  return { other, this, contacts };
+}
+
+std::vector<TContactPoint> CComplexObject::getNodeCollisions( CComplexObject *other,
+                                                              const TVector<2> &node ) const
+{
+  vector<TContactPoint> contacts;
+  for( size_t faceIdx = 1; faceIdx < other->m_vertices.size(); ++faceIdx )
+  {
+    const auto &begin = other->m_vertices[ faceIdx - 1 ];
+    const auto &end = other->m_vertices[ faceIdx ];
+    const auto direction = end - begin;
+    TContactPoint contact = rectCircle( other->m_position + ( begin + end ) / 2,
+                                        { direction.norm() / 2, other->m_width },
+                                        direction.getAngle(),
+                                        node, m_width );
+    if( !contact.contactPoint )
+      continue;
+    contacts.push_back( contact );
+  }
+  return contacts;
 }
 
 CPhysicsObject &CComplexObject::rotate( double angle )
 {
-  auto rot = TMatrix<2,2>::rotationMatrix2D( angle );
+  auto rot = TMatrix<2, 2>::rotationMatrix2D( angle );
   for( TVector<2> &vertex: m_vertices )
     vertex = rot * vertex;
   return *this;
@@ -148,14 +197,44 @@ CPhysicsObject &CComplexObject::rotate( double angle )
 
 void CComplexObject::addVertex( const TVector<2> &point )
 {
-  m_vertices.push_back( point - m_position );
+  TVector<2> newPoint = point - m_position;
+  if( m_vertices.size() )
+  {
+    double length = newPoint.distance( m_vertices.back() );
+    if( length > m_longest )
+      m_longest = length;
+  }
+  m_vertices.push_back( newPoint );
 }
 
 double CComplexObject::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const
 {
   if( CPhysicsObject::rayTrace( position, direction ) == HUGE_VAL )
     return HUGE_VAL;
-  return HUGE_VAL; // todo
+  if( m_vertices.empty() )
+    return HUGE_VAL;
+  double smallest = HUGE_VAL;
+  for( auto it = m_vertices.begin() + 1; it != m_vertices.end(); ++it )
+  {
+    TVector<2> normal = crossProduct( *it - *( it - 1 ) ).stretchedTo( m_width );
+    TVector<2> back = m_position + *it;
+    TVector<2> front = m_position + *( it - 1 );
+    smallest = min( smallest, CRectangle::rayTrace( position, direction,
+                                                    { back + normal,
+                                                      back - normal,
+                                                      front - normal,
+                                                      front + normal } ) );
+  }
+  for( auto centre: { m_vertices.front(),
+                      m_vertices.back() } )
+  {
+    double rayLen = CCircle::rayTrace( position, direction,
+                                       m_position + centre, m_width );
+    if( rayLen < 0 )
+      continue;
+    smallest = min( smallest, rayLen );
+  }
+  return smallest;
 }
 
 void CComplexObject::spawn( double density )
@@ -170,6 +249,8 @@ void CComplexObject::spawn( double density )
       m_boundingRadius = vertex.norm() + m_width;
   }
 
+  m_longest = sqrt( 0.25 * m_longest * m_longest + m_width * m_width );
+
   if( isnan( density ) )
   {
     return;
@@ -178,3 +259,4 @@ void CComplexObject::spawn( double density )
   m_attributes = TPhysicsAttributes::complexObjectAttributes( m_width, density,
                                                               m_vertices );
 }
+

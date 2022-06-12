@@ -1,22 +1,25 @@
 {
   "scene":
   {
+    "title": "Level III",
     "size": [ 1000, 800 ],
-    "bg_color": [ 200, 200, 200, 255 ],
-    "fields": [ "gravity" ]
+    "fields": [ "gravity" ],
+    "pen":
+    {
+      "width": 15,
+      "density": 250
+    },
+    "next": "assets/level_4.json"
   },
   "items":
   [
-    { "type": "circle", "position": [ 400, 200 ], "size": 60, "physics": { "density": 50 } },
-    { "type": "circle", "position": [ 500, 700 ], "size": 70, "physics": { "density": 80 } },
-    { "type": "circle", "position": [ 300, 600 ], "size": 50, "physics": { "density": 80 } },
-    { "type": "circle", "position": [ 600, 400 ], "size": 40, "physics": { "density": 80 } },
-    { "type": "circle", "position": [ 300, 300 ], "size": 40, "physics": { "density": 80 } },
-    { "type": "circle", "position": [ 200, 400 ], "size": 40, "physics": { "density": 80 } },
-    { "type": "circle", "position": [ 700, 700 ], "size": 40, "physics": { "density": 80 } },
-    { "type": "line",   "position": [ [  10,  10 ], [ 990,  10 ] ] },
-    { "type": "line",   "position": [ [ 990,  10 ], [ 990, 790 ] ] },
-    { "type": "line",   "position": [ [ 990, 790 ], [  10, 790 ] ] },
-    { "type": "line",   "position": [ [  10, 790 ], [  10,  10 ] ] }
+    { "type": "circle",    "position": [ 500, 600 ], "size": 60, "physics": { "density": 10 }, "tag": "player" },
+    { "type": "rectangle", "position": [ 540,  10 ], "size": [ 890,  10 ], "tag": "target" },
+    { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
+    { "type": "rectangle", "position": [ 540, 790 ], "size": [ 900,  10 ] },
+    { "type": "rectangle", "position": [  90, 400 ], "size": [  10, 790 ] },
+
+    { "type": "rectangle", "position": [ 380, 500 ], "size": [ 240,  20 ], "rotation":  0.05 },
+    { "type": "rectangle", "position": [ 620, 500 ], "size": [ 240,  20 ], "rotation": -0.05 }
   ]
 }

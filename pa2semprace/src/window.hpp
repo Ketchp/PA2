@@ -1,4 +1,5 @@
 #pragma once
+
 #include "linearAlgebra.hpp"
 #include "tags.hpp"
 #include <GL/freeglut.h>
@@ -9,6 +10,7 @@
 #include <utility>
 #include <memory>
 #include <cassert>
+
 
 class CWindow
 {
@@ -47,6 +49,7 @@ public:
 
   void drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint,
                  double, ETag = ETag::NONE );
+
   void drawCircle( const TVector<2> &centre,
                    double radius,
                    double angle = NAN,
@@ -55,6 +58,7 @@ public:
   void drawText( const TVector<2> &position, const std::string &text );
 
   void applyPenColor( ETag );
+
   void restorePenColor( ETag );
 
 
@@ -68,28 +72,43 @@ public:
   TVector<2> getViewSize() const;
 
   void mainLoop() const;
+
   int m_windowID;
+
+  size_t queueSize() const;
+
 private:
   TVector<2> m_viewOrigin;
   TVector<2> m_viewExtreme;
   TVector<2> m_windowSize;
   double m_scale;
+
   static void redrawEventHandler();
+
   static void timerEventHandler( int );
+
   static void resizeEventHandler( int, int );
+
   static void keyPressEventHandler( unsigned char, int, int );
+
   static void keyReleaseEventHandler( unsigned char, int, int );
+
   static void specialKeyPressEventHandler( int, int, int );
+
   static void specialKeyReleaseEventHandler( int, int, int );
+
   static void mouseButtonEventHandler( int, int, int, int );
+
   static void mouseMotionEventHandler( int, int );
+
   static void windowCloseEventHandler();
 
   void resizeWindowAction( int w, int h );
+
   TVector<2> resolveCoordinates( int x, int y ) const;
 
   std::function<void()> redrawEventCallback;
-  std::map< int, std::function<void()> > timerEventCallbacks;
+  std::map<int, std::function<void()>> timerEventCallbacks;
   std::function<void( unsigned char, int, int )> keyPressEventCallback;
   std::function<void( unsigned char, int, int )> keyReleaseEventCallback;
   std::function<void( int, int, int )> specialKeyPressEventCallback;
@@ -104,7 +123,7 @@ template <typename type>
 unsigned int
 CWindow::registerDrawEvent( type *cl, void(type::*callback)() )
 {
-  redrawEventCallback = [cl, callback](){ (cl->*callback)(); };
+  redrawEventCallback = [ cl, callback ](){ ( cl->*callback )(); };
   glutDisplayFunc( &CWindow::redrawEventHandler );
   return 0;
 }
@@ -117,7 +136,7 @@ CWindow::registerTimerEvent( type *cl,
                              unsigned int time_ms )
 {
   static int timerHandlerId = 0;
-  timerEventCallbacks.emplace( timerHandlerId, [cl, callback, values... ](){ (cl->*callback)( values... ); } );
+  timerEventCallbacks.emplace( timerHandlerId, [ cl, callback, values... ](){ ( cl->*callback )( values... ); } );
   glutTimerFunc( time_ms, &CWindow::timerEventHandler, timerHandlerId++ );
   return 0;
 }
@@ -126,10 +145,10 @@ template <typename type>
 unsigned int
 CWindow::registerKeyEvent( type *cl, void(type::*callback)( unsigned char, int, int ) )
 {
-  keyPressEventCallback = [cl, callback, this]( unsigned char key, int x, int y )
+  keyPressEventCallback = [ cl, callback, this ]( unsigned char key, int x, int y )
   {
     TVector<2> relativeCoord = resolveCoordinates( x, y );
-    (cl->*callback)( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
+    ( cl->*callback )( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
   };
   glutKeyboardFunc( &CWindow::keyPressEventHandler );
   return 0;
@@ -139,10 +158,10 @@ template <typename type>
 unsigned int
 CWindow::registerKeyUpEvent( type *cl, void(type::*callback)( unsigned char, int, int ) )
 {
-  keyReleaseEventCallback = [cl, callback, this]( unsigned char key, int x, int y )
+  keyReleaseEventCallback = [ cl, callback, this ]( unsigned char key, int x, int y )
   {
     TVector<2> relativeCoord = resolveCoordinates( x, y );
-    (cl->*callback)( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
+    ( cl->*callback )( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
   };
   glutKeyboardUpFunc( &CWindow::keyReleaseEventHandler );
   return 0;
@@ -152,10 +171,10 @@ template <typename type>
 unsigned int
 CWindow::registerSpecialKeyEvent( type *cl, void(type::*callback)( int, int, int ) )
 {
-  specialKeyPressEventCallback = [cl, callback, this]( int key, int x, int y )
+  specialKeyPressEventCallback = [ cl, callback, this ]( int key, int x, int y )
   {
     TVector<2> relativeCoord = resolveCoordinates( x, y );
-    (cl->*callback)( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
+    ( cl->*callback )( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
   };
   glutSpecialFunc( &CWindow::specialKeyPressEventHandler );
   return 0;
@@ -165,10 +184,10 @@ template <typename type>
 unsigned int
 CWindow::registerSpecialKeyUpEvent( type *cl, void(type::*callback)( int, int, int ) )
 {
-  specialKeyReleaseEventCallback = [cl, callback, this]( int key, int x, int y )
+  specialKeyReleaseEventCallback = [ cl, callback, this ]( int key, int x, int y )
   {
     TVector<2> relativeCoord = resolveCoordinates( x, y );
-    (cl->*callback)( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
+    ( cl->*callback )( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
   };
   glutSpecialUpFunc( &CWindow::specialKeyReleaseEventHandler );
   return 0;
@@ -178,10 +197,10 @@ template <typename type>
 unsigned int
 CWindow::registerMouseButtonEvent( type *cl, void(type::*callback)( int, int, int, int ) )
 {
-  mouseButtonEventCallback = [cl, callback, this]( int button, int state, int x, int y )
+  mouseButtonEventCallback = [ cl, callback, this ]( int button, int state, int x, int y )
   {
     TVector<2> relativeCoord = resolveCoordinates( x, y );
-    (cl->*callback)( button, state, relativeCoord[ 0 ], relativeCoord[ 1 ] );
+    ( cl->*callback )( button, state, relativeCoord[ 0 ], relativeCoord[ 1 ] );
   };
   glutMouseFunc( &CWindow::mouseButtonEventHandler );
   return 0;
@@ -191,10 +210,10 @@ template <typename type>
 unsigned int
 CWindow::registerMotionButtonEvent( type *cl, void(type::*callback)( int, int ) )
 {
-  mouseMotionEventCallback = [cl, callback, this]( int x, int y )
+  mouseMotionEventCallback = [ cl, callback, this ]( int x, int y )
   {
     TVector<2> relativeCoord = resolveCoordinates( x, y );
-    (cl->*callback)( relativeCoord[ 0 ], relativeCoord[ 1 ] );
+    ( cl->*callback )( relativeCoord[ 0 ], relativeCoord[ 1 ] );
   };
   glutMotionFunc( &CWindow::mouseMotionEventHandler );
   return 0;
@@ -204,7 +223,7 @@ template <typename type>
 unsigned int
 CWindow::registerWindowCloseEvent( type *cl, void(type::*callback)() )
 {
-  windowCloseEventCallback = [cl, callback](){ (cl->*callback)(); };
+  windowCloseEventCallback = [ cl, callback ](){ ( cl->*callback )(); };
   glutCloseFunc( &CWindow::windowCloseEventHandler );
   return 0;
 }

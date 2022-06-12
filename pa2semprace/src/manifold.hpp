@@ -1,10 +1,12 @@
 #pragma once
+
 #include <functional>
 #include <vector>
 #include "linearAlgebra.hpp"
 
 
 class CObject;
+
 class CPhysicsObject;
 
 struct TContactPoint

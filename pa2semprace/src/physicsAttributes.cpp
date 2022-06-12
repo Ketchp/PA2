@@ -1,5 +1,6 @@
 #include "physicsAttributes.hpp"
 
+
 using namespace std;
 
 TPhysicsAttributes TPhysicsAttributes::rectangleAttributes( double density,
@@ -39,8 +40,7 @@ TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double width,
 }
 
 TPhysicsAttributes::TPhysicsAttributes( double mass, double angularMass )
-  : mass( mass ),
-    invMass( 1 / mass ),
-    angularMass( angularMass ),
-    invAngularMass( 1 / angularMass )
-{}
+        : mass( mass ),
+          invMass( 1 / mass ),
+          angularMass( angularMass ),
+          invAngularMass( 1 / angularMass ){}

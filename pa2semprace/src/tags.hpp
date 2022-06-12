@@ -1,5 +1,7 @@
 #pragma once
+
 #include <cstdint>
+
 
 enum ETag : uint8_t
 {
@@ -14,11 +16,20 @@ enum ETag : uint8_t
   NON_SOLID = 2,
 
   // value intended for use with checks
-  TARGET = 4
+  TARGET = 4,
+
+  // player
+  PLAYER = 8,
+
+  // tag for displaying health
+  HEALTH = 16
 };
 
 ETag operator|( ETag lhs, ETag rhs );
+
 ETag &operator|=( ETag &lhs, ETag rhs );
+
 ETag operator&( ETag lhs, ETag rhs );
+
 ETag &operator&=( ETag &lhs, ETag rhs );
 

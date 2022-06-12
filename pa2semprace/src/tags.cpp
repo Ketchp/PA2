@@ -1,6 +1,7 @@
 #include "tags.hpp"
 #include <type_traits>
 
+
 using namespace std;
 
 ETag operator|( ETag lhs, ETag rhs )

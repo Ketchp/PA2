@@ -2,6 +2,7 @@
 #include "rectangle.hpp"
 #include "complexObject.hpp"
 
+
 using namespace std;
 using namespace collision;
 
@@ -51,13 +52,21 @@ double CCircle::rayTrace( const TVector<2> &position, const TVector<2> &directio
 {
   if( CPhysicsObject::rayTrace( position, direction ) == HUGE_VAL )
     return HUGE_VAL;
+  return rayTrace( position, direction, m_position, m_radius );
+}
+
+double CCircle::rayTrace( const TVector<2> &position,
+                          const TVector<2> &direction,
+                          const TVector<2> &centre,
+                          double radius )
+{
   TVector<2> unit = direction.normalized();
-  TVector<2> chordHeight = ( m_position - position ).rejectedFrom( unit );
-  if( chordHeight.squareNorm() > m_radius * m_radius )
+  TVector<2> chordHeight = ( centre - position ).rejectedFrom( unit );
+  if( chordHeight.squareNorm() > radius * radius )
     return HUGE_VAL;
 
-  TVector<2> chordCentre = ( m_position - position ).projectedTo( unit );
-  double chordHalfLength = sqrt( m_radius * m_radius - chordHeight.squareNorm() );
+  TVector<2> chordCentre = ( centre - position ).projectedTo( unit );
+  double chordHalfLength = sqrt( radius * radius - chordHeight.squareNorm() );
   TVector<2> chordStart = chordCentre - unit.stretchedTo( chordHalfLength );
   TVector<2> chordEnd = chordCentre + unit.stretchedTo( chordHalfLength );
 

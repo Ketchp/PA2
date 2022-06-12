@@ -1,7 +1,7 @@
 {
   "scene":
   {
-    "title": "Test",
+    "title": "Level",
     "size": [ 1000, 800 ],
     "fields": [ "gravity" ],
     "pen":
@@ -13,7 +13,7 @@
   },
   "items":
   [
-    { "type": "circle",    "position": [ 230, 700 ], "size": 60, "physics": { "density": 50 }, "tag": "target" },
+    { "type": "circle",    "position": [ 230, 700 ], "size": 60, "physics": { "density": 50 }, "tag": "player" },
     { "type": "circle",    "position": [ 730, 700 ], "size": 60, "physics": { "density": 50 } },
     { "type": "circle",    "position": [ 830, 600 ], "size": 60, "physics": { "density": 50 } },
     { "type": "rectangle", "position": [ 200, 200 ], "size": [ 120,  8 ], "rotation": -0.7, "physics": { "density": 80 } },

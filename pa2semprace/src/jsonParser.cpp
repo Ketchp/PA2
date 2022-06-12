@@ -1,37 +1,31 @@
 #include "jsonParser.hpp"
 
+
 using namespace std;
 
 CJsonValue::CJsonValue( EJsonType type )
-  : m_type( type )
-{}
+        : m_type( type ){}
 
 CJsonObject::CJsonObject()
-  : CJsonValue( EJsonType::jsonObjectType )
-{}
+        : CJsonValue( EJsonType::jsonObjectType ){}
 
 CJsonArray::CJsonArray()
-  : CJsonValue( EJsonType::jsonArrayType )
-{}
+        : CJsonValue( EJsonType::jsonArrayType ){}
 
 CJsonString::CJsonString( string value )
-  : CJsonValue( EJsonType::jsonStringType ),
-    m_string( move( value ) )
-{}
+        : CJsonValue( EJsonType::jsonStringType ),
+          m_string( move( value ) ){}
 
 CJsonNumber::CJsonNumber( string number )
-  : CJsonValue( EJsonType::jsonNumberType ),
-    m_number( move( number ) )
-{}
+        : CJsonValue( EJsonType::jsonNumberType ),
+          m_number( move( number ) ){}
 
 CJsonBool::CJsonBool( bool value )
-  : CJsonValue( EJsonType::jsonBoolType ),
-    m_bool( value )
-{}
+        : CJsonValue( EJsonType::jsonBoolType ),
+          m_bool( value ){}
 
 CJsonNull::CJsonNull()
-  : CJsonValue( EJsonType::jsonNullType )
-{}
+        : CJsonValue( EJsonType::jsonNullType ){}
 
 CJsonValue *CJsonObject::clone() const
 {
@@ -184,13 +178,18 @@ CJsonValue *CJsonObject::parseFromString( const string &data, size_t &position )
 {
   CJsonObject *parsedObject = new CJsonObject;
   if( data[ position ] != '{' )
+  {
+    delete parsedObject;
     throw invalid_argument( "Expected '{' at position " + to_string( position ) );
+  }
   ++position; // '{'
 
   parseWhitespace( data, position );
   if( data.size() == position )
+  {
+    delete parsedObject;
     throw invalid_argument( "Expected '}' or string at end of file." );
-
+  }
   if( data[ position ] == '}' )
   {
     ++position;
@@ -201,28 +200,59 @@ CJsonValue *CJsonObject::parseFromString( const string &data, size_t &position )
   {
     parseWhitespace( data, position );
     if( data.size() == position )
+    {
+      delete parsedObject;
       throw invalid_argument( "Expected string at the end of file." );
+    }
 
-    CJsonValue *parsedString = CJsonString::parseFromString( data, position );
-    string key = move( parsedString->toString() );
-    delete parsedString;
+    CJsonValue *parsedString;
+    string key;
+    try
+    {
+      parsedString = CJsonString::parseFromString( data, position );
+      key = move( parsedString->toString() );
+      delete parsedString;
+    }
+    catch( ... )
+    {
+      delete parsedObject;
+      throw;
+    }
 
     parseWhitespace( data, position );
     if( position == data.size() || data[ position ] != ':' )
+    {
+      delete parsedObject;
       throw invalid_argument( "Expected ':' at position " + to_string( position ) );
+    }
     ++position; // ':'
 
-    CJsonValue *parsedValue = CJsonValue::parseFromString( data, position );
-    parsedObject->m_object.emplace( key, parsedValue );
+    CJsonValue *parsedValue;
+    try
+    {
+      parsedValue = CJsonValue::parseFromString( data, position );
+      parsedObject->m_object.emplace( key, parsedValue );
+    }
+    catch( ... )
+    {
+      delete parsedObject;
+      throw;
+    }
 
     if( data.size() == position )
+    {
+      delete parsedObject;
       throw invalid_argument( "Expected ',' or '}' at the end of file." );
+    }
 
     if( data[ position ] == '}' )
       break;
     if( data[ position ] != ',' )
+    {
+      delete parsedObject;
       throw invalid_argument( "Unexpected character " + to_string( data[ position ] ) +
-                                   " at position: " + to_string( position ) );
+                              " at position: " + to_string( position ) );
+    }
     ++position;
   }
   ++position;
@@ -259,13 +289,18 @@ CJsonValue *CJsonArray::parseFromString( const string &data, size_t &position )
 {
   CJsonArray *parsedArray = new CJsonArray;
   if( data[ position ] != '[' )
+  {
+    delete parsedArray;
     throw invalid_argument( "Expected '[' at position " + to_string( position ) );
+  }
   ++position; // '['
 
   parseWhitespace( data, position );
   if( data.size() == position )
+  {
+    delete parsedArray;
     throw invalid_argument( "Expected ']' or value at end of file." );
-
+  }
   if( data[ position ] == ']' )
   {
     ++position;
@@ -274,17 +309,29 @@ CJsonValue *CJsonArray::parseFromString( const string &data, size_t &position )
 
   while( true )
   {
-    CJsonValue *parsedValue = CJsonValue::parseFromString( data, position );
-    parsedArray->m_vector.emplace_back( parsedValue );
-
+    try
+    {
+      CJsonValue *parsedValue = CJsonValue::parseFromString( data, position );
+      parsedArray->m_vector.emplace_back( parsedValue );
+    }
+    catch( ... )
+    {
+      delete parsedArray;
+      throw;
+    }
     if( data.size() == position )
+    {
+      delete parsedArray;
       throw invalid_argument( "Expected ',' or ']' at the end of file." );
-
+    }
     if( data[ position ] == ']' )
       break;
     if( data[ position ] != ',' )
+    {
+      delete parsedArray;
       throw invalid_argument( "Unexpected character " + to_string( data[ position ] ) +
-                                   " at position: " + to_string( position ) );
+                              " at position: " + to_string( position ) );
+    }
     ++position;
   }
   ++position;
@@ -319,7 +366,7 @@ CJsonValue *CJsonString::parseFromString( const string &data, size_t &position )
 {
   if( data[ position ] != '"' )
     throw invalid_argument( "Expected '\"' at position " +
-                                 to_string( position ) );
+                            to_string( position ) );
   ++position; // '"'
 
   string value;
@@ -407,9 +454,13 @@ CJsonValue *CJsonNumber::parseFromString( const string &data, size_t &position )
     return new CJsonNumber( number );
 
   if( data[ position ] == '.' )
-    do number += data[ position++ ];
-    while( data.size() != position && '0' <= data[ position ] && data[ position ] <= '9' );
-
+  {
+    number += data[ position++ ];
+    if( data.size() == position || data[ position ] < '0' || data[ position ] > '9' )
+      throw invalid_argument( "Expected digit after . at position " + to_string( position ) );
+    while( data.size() != position && data[ position ] >= '0' && data[ position ] <= '9' )
+      number += data[ position++ ];
+  }
   if( data.size() == position )
     return new CJsonNumber( number );
 
@@ -417,11 +468,11 @@ CJsonValue *CJsonNumber::parseFromString( const string &data, size_t &position )
   {
     number += data[ position++ ];
     if( data.size() == position )
-      throw invalid_argument( "Expected number after E/e at position " + to_string( position ) );
+      throw invalid_argument( "Expected digit after E/e at position " + to_string( position ) );
     if( data[ position ] == '+' || data[ position ] == '-' )
       number += data[ position++ ];
-    if( data.size() == position )
-      throw invalid_argument( "Expected number after E/e at position " + to_string( position ) );
+    if( data.size() == position || data[ position ] < '0' || data[ position ] > '9' )
+      throw invalid_argument( "Expected digit after E/e at position " + to_string( position ) );
     while( data.size() != position && '0' <= data[ position ] && data[ position ] <= '9' )
       number += data[ position++ ];
   }
@@ -451,14 +502,20 @@ CJsonValue *CJsonBool::parseFromString( const string &data, size_t &position )
       data[ position + 1 ] == 'r' &&
       data[ position + 2 ] == 'u' &&
       data[ position + 3 ] == 'e' )
+  {
+    position += 4;
     return new CJsonBool( true );
+  }
   else if( data.size() >= position + 5 &&
            data[ position ] == 'f' &&
            data[ position + 1 ] == 'a' &&
            data[ position + 2 ] == 'l' &&
            data[ position + 3 ] == 's' &&
            data[ position + 4 ] == 'e' )
+  {
+    position += 5;
     return new CJsonBool( false );
+  }
   else
     throw invalid_argument( "Unexpected character in boolean value at position " + to_string( position ) );
 }
@@ -470,7 +527,10 @@ CJsonValue *CJsonNull::parseFromString( const string &data, size_t &position )
       data[ position + 1 ] == 'u' &&
       data[ position + 2 ] == 'u' &&
       data[ position + 3 ] == 'l' )
+  {
+    position += 4;
     return new CJsonNull();
+  }
   else
     throw invalid_argument( "Unexpected character in null value at position " + to_string( position ) );
 }
@@ -479,17 +539,24 @@ CJsonDocument::CJsonDocument( const string &fileName )
 {
   ifstream file( fileName );
   if( !file.good() )
-    throw invalid_argument( "File " + fileName + " could not be opened." );
+    throw invalid_argument( "File " + fileName + " could not be opened.\n" );
   size_t position = 0;
-  m_top = CJsonValue::parseFromString( string( istreambuf_iterator<char>(file),
-                                               istreambuf_iterator<char>() ),
-                                       position );
+  string rawText{ istreambuf_iterator<char>( file ),
+                  istreambuf_iterator<char>() };
+
+  for( auto c: rawText )
+  {
+    if( c & 0x80 )
+      throw invalid_argument( "UTF-8 characters not supported.\n" );
+  }
+
+  m_top = CJsonValue::parseFromString( rawText, position );
   m_type = m_top->m_type;
   file.seekg( 0, ios::end );
   if( position == (size_t)file.tellg() )
     return;
   delete m_top;
-  throw invalid_argument( "Expected end of file." );
+  throw invalid_argument( "Expected end of file.\n" );
 }
 
 CJsonDocument::~CJsonDocument()

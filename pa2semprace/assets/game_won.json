@@ -1,0 +1,17 @@
+{
+  "scene":
+  {
+    "title": "Game won",
+    "size": [ 1000, 800 ],
+    "bar": false,
+    "next": "assets/game_won.json"
+  },
+  "items":
+  [
+    { "type": "circle", "position": [ -100,  10 ], "size": 50, "tag": "player" },
+    { "type": "circle", "position": [ -100, -10 ], "size": 50, "tag": "target" },
+    { "type": "text",   "position": [ 500, 440 ], "text": "Congratulation!" },
+    { "type": "text",   "position": [ 500, 400 ], "text": "You completed all levels." },
+    { "type": "text",   "position": [ 500, 360 ], "text": "Press 'Q' to quit." }
+  ]
+}

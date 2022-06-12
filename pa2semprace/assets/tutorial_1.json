@@ -1,0 +1,26 @@
+{
+  "scene":
+  {
+    "title": "Tutorial I",
+    "size": [ 1000, 800 ],
+    "fields": [ "gravity" ],
+    "pen":
+    {
+      "width": 10,
+      "density": 250
+    },
+    "next": "assets/tutorial_2.json"
+  },
+  "items":
+  [
+    { "type": "circle",    "position": [ 500, 600 ], "size": 20, "physics": { "density": 50 }, "tag": "player" },
+    { "type": "rectangle", "position": [ 540,  10 ], "size": [ 890,  10 ], "tag": "target" },
+    { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
+    { "type": "rectangle", "position": [ 540, 790 ], "size": [ 900,  10 ] },
+    { "type": "rectangle", "position": [  90, 400 ], "size": [  10, 790 ] },
+    { "type": "text", "position": [ 540, 420 ], "text": "Your quest is to make player(purple)" },
+    { "type": "text", "position": [ 540, 380 ], "text": "touch the finish(green)." },
+    { "type": "text", "position": [ 540, 340 ], "text": "Start the game by drawing or pressing 'p'" },
+    { "type": "text", "position": [ 540, 300 ], "text": "Press 'r' to restart" }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "scene":
+  {
+    "title": "Tutorial III",
+    "size": [ 1000, 800 ],
+    "fields": [ "gravity" ],
+    "pen":
+    {
+      "width": 15,
+      "density": 50
+    },
+    "next": "assets/level_1.json"
+  },
+  "items":
+  [
+    { "type": "circle",    "position": [ 150, 750 ], "size": 20, "physics": { "density": 50 }, "tag": "player" },
+    { "type": "rectangle", "position": [ 900,  10 ], "size": [ 170,  10 ], "tag": "target" },
+    { "type": "rectangle", "position": [ 110,  10 ], "size": [  40,  10 ] },
+    { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
+    { "type": "rectangle", "position": [ 540, 790 ], "size": [ 900,  10 ] },
+    { "type": "rectangle", "position": [  90, 400 ], "size": [  10, 790 ] },
+
+    { "type": "rectangle", "position": [ 610, 400 ], "size": [ 750, 790 ], "tag": "non solid" },
+
+    { "type": "text", "position": [ 600, 420 ], "text": "You can't draw over blue area," },
+    { "type": "text", "position": [ 600, 380 ], "text": "so you need to be crafty." }
+  ]
+}

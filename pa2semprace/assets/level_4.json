@@ -1,0 +1,28 @@
+{
+  "scene":
+  {
+    "title": "Level III",
+    "size": [ 1000, 800 ],
+    "fields": [ "gravity" ],
+    "pen":
+    {
+      "width": 15,
+      "density": 250
+    },
+    "next": "assets/game_won.json"
+  },
+  "items":
+  [
+    { "type": "circle",    "position": [ 180, 750 ], "size": 20, "physics": { "density": 10 }, "tag": "player" },
+    { "type": "rectangle", "position": [ 540,  10 ], "size": [ 890,  10 ] },
+    { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
+    { "type": "rectangle", "position": [ 540, 790 ], "size": [ 900,  10 ] },
+    { "type": "rectangle", "position": [  90, 400 ], "size": [  10, 790 ] },
+
+    { "type": "rectangle", "position": [ 180, 100 ], "size": [ 180, 180 ], "tags": [ "target", "non solid" ] },
+
+    { "type": "rectangle", "position": [ 440, 600 ], "size": [ 700,  20 ] },
+    { "type": "rectangle", "position": [ 640, 400 ], "size": [ 700,  20 ] },
+    { "type": "rectangle", "position": [ 440, 200 ], "size": [ 700,  20 ] }
+  ]
+}

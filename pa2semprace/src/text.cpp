@@ -1,10 +1,11 @@
 #include "text.hpp"
 
+
 using namespace std;
 
 CText::CText( TVector<2> position, std::string text )
-  : CObject( position ), text( move( text ) )
-{}
+        : CObject( position ),
+          text( move( text ) ){}
 
 void CText::render( CWindow &win ) const
 {

@@ -1,5 +1,6 @@
 #include "physicsObject.hpp"
 
+
 using namespace std;
 
 CPhysicsObject::CPhysicsObject( TVector<2> position,
@@ -7,8 +8,7 @@ CPhysicsObject::CPhysicsObject( TVector<2> position,
                                 double angle )
         : CObject( position ),
           m_attributes( attributes ),
-          m_rotation( angle )
-{}
+          m_rotation( angle ){}
 
 CPhysicsObject &CPhysicsObject::rotate( double angle )
 {
@@ -42,6 +42,11 @@ void CPhysicsObject::applyImpulse( const TVector<2> &impulse, const TVector<2> &
   m_attributes.angularVelocity += lever.dot( crossProduct( impulse ) ) *
                                   m_attributes.invAngularMass;
 
+  double offset = 8;
+  double scale = 2000;
+  m_attributes.integrity -= max( impulse.norm() * m_attributes.invMass - offset, 0. ) / scale;
+
+
 //  if( m_attributes.invMass != 0 )
 //  {
 //    cout << impulse << " at " << point << endl;
@@ -60,7 +65,7 @@ TVector<2> CPhysicsObject::getLocalVelocity( const TVector<2> &point ) const
 
 double CPhysicsObject::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const
 {
-  if( m_tag == TRANSPARENT )
+  if( m_tag & TRANSPARENT )
     return HUGE_VAL;
   return NAN;
 }
@@ -119,7 +124,8 @@ TContactPoint collision::circleCircle( const TVector<2> &firstCentre, double fir
   double relativeDist = relativePos.norm();
   double overlapSize = firstRadius + secondRadius - relativeDist;
   if( overlapSize <= 0 )
-    return { {}, { NAN, NAN } };
+    return { {},
+             { NAN, NAN } };
   TVector<2> overlap = relativePos.stretchedTo( overlapSize / 2 );
   return { overlap,
            firstCentre + relativePos.stretchedTo( firstRadius ) - overlap };
@@ -148,7 +154,8 @@ TContactPoint collision::rectCircle( const TVector<2> &position,
 
   double distance = closestPoint.distance( centre );
   if( distance >= radius )
-    return { {}, { NAN, NAN } };
+    return { {},
+             { NAN, NAN } };
 
   TVector<2> overlap = ( centre - closestPoint );
   overlap.stretchTo( ( radius - distance ) / 2 );
@@ -162,6 +169,9 @@ TContactPoint collision::rectRect( const TVector<2> &firstPos,
                                    const TVector<2> &secondSize,
                                    double secondRot )
 {
+  if( firstPos.distance( secondPos ) > firstSize.norm() + secondSize.norm() )
+    return { {},
+             { NAN, NAN } };
   // vector needed to move first
   TContactPoint firstSecond = firstRectOverlap( firstPos, firstSize, firstRot,
                                                 secondPos, secondSize, secondRot );
@@ -188,7 +198,7 @@ TContactPoint collision::firstRectOverlap( const TVector<2> &firstPos,
                                            const TVector<2> &secondSize,
                                            double secondRot )
 {
-  TVector<2> axes[ 4 ] = {
+  TVector<2> axes[4] = {
           TVector<2>::canonical( 0 ).rotated( firstRot ),
           TVector<2>::canonical( 0 ).rotated( firstRot + M_PI_2 )
   };
@@ -205,7 +215,8 @@ TContactPoint collision::firstRectOverlap( const TVector<2> &firstPos,
                                                 firstCorners[ ( idx + 2 ) % 4 ],
                                                 secondCorners );
     if( !temp.overlapVector )
-      return { {}, { NAN, NAN } };
+      return { {},
+               { NAN, NAN } };
     double dist = temp.overlapVector.squareNorm();
     if( dist < smallestOverlap )
     {
@@ -216,6 +227,7 @@ TContactPoint collision::firstRectOverlap( const TVector<2> &firstPos,
 
   return res;
 }
+
 TMatrix<2, 4> collision::rectCorners( const TVector<2> &position,
                                       const TVector<2> &size,
                                       double rotation )
@@ -278,7 +290,8 @@ collision::axisPointsPenetration( const TVector<2> &axisDirection,
   }
 
   if( maxOverlap <= 0 )
-    return { {}, { NAN, NAN } };
+    return { {},
+             { NAN, NAN } };
 
   return { normal.stretchedTo( maxOverlap / 2 ), maxPoint };
 }
@@ -299,9 +312,10 @@ TVector<2> collision::lineSegmentClosestPoint( const TVector<2> &begin,
 TContactPoint collision::biggestOverlap( CPhysicsObject *target,
                                          const std::vector<CPhysicsObject *> &objects )
 {
-  TContactPoint res = { {}, { NAN, NAN } };
+  TContactPoint res = { {},
+                        { NAN, NAN } };
   double norm = 0;
-  for( const auto &object: objects)
+  for( const auto &object: objects )
   {
     TManifold collision = target->getManifold( object );
     for( const auto &contact: collision.contacts )

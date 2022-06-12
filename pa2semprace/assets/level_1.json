@@ -1,25 +1,24 @@
 {
   "scene":
   {
-    "title": "Level 1",
+    "title": "Level I",
     "size": [ 1000, 800 ],
     "fields": [ "gravity" ],
     "pen":
     {
       "width": 15,
-      "density": 50
+      "density": 250
     },
     "next": "assets/level_2.json"
   },
   "items":
   [
-    { "type": "circle",    "position": [ 500, 600 ], "size": 20, "physics": { "density": 50 }, "tag": "target" },
-    { "type": "rectangle", "position": [ 500,  10 ], "size": [ 970,  10 ], "tag": "target" },
-    { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
-    { "type": "rectangle", "position": [ 500, 790 ], "size": [ 970,  10 ] },
-    { "type": "rectangle", "position": [  10, 400 ], "size": [  10, 790 ] },
-    { "type": "text", "position": [ 500, 400 ], "text": "Make the ball touch the ground!" },
-    { "type": "text", "position": [ 500, 350 ], "text": "Draw with mouse" },
-    { "type": "text", "position": [ 500, 300 ], "text": "Restart with 'r'" }
+    { "type": "circle",    "position": [ 500,  80 ], "size": 60, "physics": { "density": 10 }, "tag": "player" },
+    { "type": "rectangle", "position": [ 540,  10 ], "size": [ 890,  10 ] },
+    { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ], "tag": "target" },
+    { "type": "rectangle", "position": [ 540, 790 ], "size": [ 890,  10 ] },
+    { "type": "rectangle", "position": [  90, 400 ], "size": [  10, 790 ], "tag": "target" },
+
+    { "type": "text", "position": [ 500, 700 ], "text": "Enjoy your game!" }
   ]
 }

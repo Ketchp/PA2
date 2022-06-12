@@ -1,5 +1,6 @@
 #include "window.hpp"
 
+
 using namespace std;
 
 CWindow::CWindow( int *argcPtr, char *argv[] )
@@ -10,14 +11,14 @@ CWindow::CWindow( int *argcPtr, char *argv[] )
   glutInit( argcPtr, argv );
   glutSetOption( GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS );
   glutInitDisplayMode( GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA );
-  glutInitWindowPosition(100,100);
-  glutInitWindowSize(320,320);
-  m_windowID =  glutCreateWindow("Lighthouse3D - GLUT Tutorial");
+  glutInitWindowPosition( 50, 50 );
+  glutInitWindowSize( 800, 640 );
+  m_windowID = glutCreateWindow( "Lighthouse3D - GLUT Tutorial" );
   glutSetKeyRepeat( GLUT_KEY_REPEAT_OFF );
   glutIgnoreKeyRepeat( 1 );
 
   // OpenGL init
-  glEnable(GL_DEPTH_TEST);
+  glEnable( GL_DEPTH_TEST );
 
   // function callback registration
   glutReshapeFunc( &CWindow::resizeEventHandler );
@@ -167,17 +168,17 @@ void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint
   TVector<2> normal = crossProduct( endPoint - startPoint ).stretchedTo( width );
 
   glBegin( GL_QUADS );
-    glVertex2d( (startPoint + normal)[ 0 ], (startPoint + normal)[ 1 ] );
-    glVertex2d( (startPoint - normal)[ 0 ], (startPoint - normal)[ 1 ] );
-    glVertex2d( (endPoint - normal)[ 0 ], (endPoint - normal)[ 1 ] );
-    glVertex2d( (endPoint + normal)[ 0 ], (endPoint + normal)[ 1 ] );
+  glVertex2d( ( startPoint + normal )[ 0 ], ( startPoint + normal )[ 1 ] );
+  glVertex2d( ( startPoint - normal )[ 0 ], ( startPoint - normal )[ 1 ] );
+  glVertex2d( ( endPoint - normal )[ 0 ], ( endPoint - normal )[ 1 ] );
+  glVertex2d( ( endPoint + normal )[ 0 ], ( endPoint + normal )[ 1 ] );
   glEnd();
   restorePenColor( tags );
 }
 
 void CWindow::drawCircle( const TVector<2> &centre, double radius, double angle, ETag tags )
 {
-  if( !isnan( angle )  )
+  if( !isnan( angle ) )
   {
     TVector<2> dir = TVector<2>::canonical( 0, radius ).rotated( angle );
     TVector<2> normal = crossProduct( dir ).stretchedTo( radius / 20 );
@@ -186,11 +187,11 @@ void CWindow::drawCircle( const TVector<2> &centre, double radius, double angle,
     glColor3d( 0, 0, 0 );
     glTranslatef( 0, 0, -0.3 );
 
-    glVertex2d( (centre + normal)[ 0 ], (centre + normal)[ 1 ] );
-    glVertex2d( (centre - normal)[ 0 ], (centre - normal)[ 1 ] );
+    glVertex2d( ( centre + normal )[ 0 ], ( centre + normal )[ 1 ] );
+    glVertex2d( ( centre - normal )[ 0 ], ( centre - normal )[ 1 ] );
 
-    glVertex2d( (centre + dir - normal)[ 0 ], (centre + dir - normal)[ 1 ] );
-    glVertex2d( (centre + dir + normal)[ 0 ], (centre + dir + normal)[ 1 ] );
+    glVertex2d( ( centre + dir - normal )[ 0 ], ( centre + dir - normal )[ 1 ] );
+    glVertex2d( ( centre + dir + normal )[ 0 ], ( centre + dir + normal )[ 1 ] );
 
     glTranslatef( 0, 0, 0.3 );
     glEnd();
@@ -199,16 +200,16 @@ void CWindow::drawCircle( const TVector<2> &centre, double radius, double angle,
   applyPenColor( tags );
   static const size_t slices = 30;
   TVector<2> lever = TVector<2>::canonical( 0, radius );
-  TMatrix<2,2> rotationMatrix =
-          TMatrix<2,2>::rotationMatrix2D( 2 * M_PI / slices );
+  TMatrix<2, 2> rotationMatrix =
+          TMatrix<2, 2>::rotationMatrix2D( 2 * M_PI / slices );
 
   glBegin( GL_TRIANGLE_FAN );
   glVertex2d( centre[ 0 ], centre[ 1 ] );
-  glVertex2d( (centre + lever)[ 0 ], (centre + lever)[ 1 ] );
+  glVertex2d( ( centre + lever )[ 0 ], ( centre + lever )[ 1 ] );
   for( size_t i = 0; i < slices; i++ )
   {
     lever = rotationMatrix * lever;
-    glVertex2d( (centre + lever)[ 0 ], (centre + lever)[ 1 ] );
+    glVertex2d( ( centre + lever )[ 0 ], ( centre + lever )[ 1 ] );
   }
 
   glEnd();
@@ -221,14 +222,14 @@ void CWindow::drawText( const TVector<2> &position, const string &text )
 {
   applyPenColor( NONE );
   auto x = position[ 0 ],
-       y = position[ 1 ];
+          y = position[ 1 ];
 
   void *font = GLUT_BITMAP_TIMES_ROMAN_24;
 
   double textWidth =
           (double)( glutBitmapLength( font,
-                reinterpret_cast<const unsigned char *>(text.c_str()) )
-           + text.size() - 1 ) / m_scale;
+                                      reinterpret_cast<const unsigned char *>(text.c_str()) )
+                    + text.size() - 1 ) / m_scale;
   x -= textWidth / 2;
 
   for( const auto &c: text )
@@ -243,9 +244,9 @@ void CWindow::drawText( const TVector<2> &position, const string &text )
 void CWindow::applyPenColor( ETag tags )
 {
   double r = 1,
-         g = 1,
-         b = 1,
-         a = 1;
+          g = 1,
+          b = 1,
+          a = 1;
 
   if( tags & ETag::TRANSPARENT )
   {
@@ -256,9 +257,10 @@ void CWindow::applyPenColor( ETag tags )
 
   if( tags & ETag::NON_SOLID )
   {
-    r = 0.9;
+    r = 0.1;
     g = 0.1;
-    b = 0.1;
+    b = 0.8;
+    a = 0.3;
     glTranslatef( 0, 0, -0.2 );
   }
 
@@ -266,6 +268,20 @@ void CWindow::applyPenColor( ETag tags )
   {
     r = 0.1;
     g = 0.9;
+    b = 0.1;
+  }
+
+  if( tags & ETag::PLAYER )
+  {
+    r = 0.9;
+    g = 0.1;
+    b = 0.9;
+  }
+
+  if( tags & ETag::HEALTH )
+  {
+    r = 0.9;
+    g = 0.1;
     b = 0.1;
   }
 
@@ -280,4 +296,9 @@ void CWindow::restorePenColor( ETag tags )
   if( tags & ETag::NON_SOLID )
     glTranslatef( 0, 0, 0.2 );
 
+}
+
+size_t CWindow::queueSize() const
+{
+  return timerEventCallbacks.size();
 }

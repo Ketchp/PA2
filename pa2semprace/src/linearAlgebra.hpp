@@ -1,10 +1,12 @@
 #pragma once
+
 #include <cmath>
 #include <array>
 #include <cfloat>
 #include <algorithm>
 #include <cstdarg>
 #include <numeric>
+
 
 template <size_t dim, typename dataType>
 struct TVector;
@@ -15,11 +17,11 @@ struct TMatrix;
 
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator+( TVector<fDim, fDataType> lhs,
-                                    const TVector<fDim, fDataType> &rhs );
+                                           const TVector<fDim, fDataType> &rhs );
 
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator-( TVector<fDim, fDataType> lhs,
-                                    const TVector<fDim, fDataType> &rhs );
+                                           const TVector<fDim, fDataType> &rhs );
 
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator*( fDataType lhs, TVector<fDim, fDataType> rhs );
@@ -34,13 +36,13 @@ template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator/( TVector<fDim, fDataType> lhs, int rhs );
 
 template <size_t h, size_t w, typename dataType>
-inline TVector<h, dataType> operator*( const TMatrix<h,w,dataType> &lhs, const TVector<w,dataType> &rhs );
+inline TVector<h, dataType> operator*( const TMatrix<h, w, dataType> &lhs, const TVector<w, dataType> &rhs );
 
 template <size_t h, size_t w, typename dataType>
-inline TMatrix<h,w, dataType> operator/( TMatrix<h,w, dataType> mat, dataType num );
+inline TMatrix<h, w, dataType> operator/( TMatrix<h, w, dataType> mat, dataType num );
 
 
-inline bool equalDoubles( double a, double b, double precision = 100 );
+bool equalDoubles( double a, double b, double precision = 100 );
 
 template <size_t dim, typename dataType>
 TVector<dim, dataType> crossProduct( std::initializer_list<TVector<dim, dataType>> args );
@@ -53,7 +55,7 @@ inline TVector<2, dataType> crossProduct( const TVector<2, dataType> &first )
 
 template <typename dataType>
 inline TVector<3, dataType> crossProduct( const TVector<3, dataType> &first,
-                                   const TVector<3, dataType> &second )
+                                          const TVector<3, dataType> &second )
 {
   return crossProduct( { first, second } );
 }
@@ -68,7 +70,7 @@ inline std::ostream &operator<<( std::ostream &os, const TVector<dim, dataType> 
   return os << std::string( " )" );
 }
 
-template <size_t dim, typename dataType = double >
+template <size_t dim, typename dataType = double>
 struct TVector
 {
   std::array<dataType, dim> data;
@@ -112,15 +114,19 @@ struct TVector
   [[nodiscard]] inline dataType dot( const TVector<dim, dataType> & ) const;
 
   TVector<dim, dataType> &rotate( double );
+
   [[nodiscard]] TVector<dim, dataType> rotated( double ) const;
 
   inline TVector<dim, dataType> &rejectFrom( const TVector<dim, dataType> & );
+
   [[nodiscard]] inline TVector<dim, dataType> rejectedFrom( const TVector<dim, dataType> & ) const;
 
   inline TVector<dim, dataType> &projectTo( const TVector<dim, dataType> & );
+
   [[nodiscard]] inline TVector<dim, dataType> projectedTo( const TVector<dim, dataType> & ) const;
 
   inline TVector<dim, dataType> &stretchTo( dataType );
+
   [[nodiscard]] inline TVector<dim, dataType> stretchedTo( dataType ) const;
 
   template <size_t inDim>
@@ -130,7 +136,7 @@ struct TVector
 
   inline static TVector<dim, dataType> canonical( size_t n, dataType size );
 
-  inline static size_t dimension() { return dim; };
+  inline static size_t dimension(){ return dim; };
 
   double getAngle() const;
 
@@ -144,9 +150,9 @@ struct TMatrix
 
   TMatrix( std::initializer_list<TVector<h, dataType>> );
 
-  inline static TMatrix<2,2,double> rotationMatrix2D( double angle );
+  inline static TMatrix<2, 2, double> rotationMatrix2D( double angle );
 
-  inline TMatrix<h,w, dataType> &operator/=( dataType num );
+  inline TMatrix<h, w, dataType> &operator/=( dataType num );
 
   inline TVector<h, dataType> &operator[]( size_t );
 
@@ -177,8 +183,7 @@ TVector<dim, dataType>::TVector( std::initializer_list<dataType> initList )
 
 template <size_t dim, typename dataType>
 TVector<dim, dataType>::TVector( std::array<dataType, dim> arr )
-  : data( std::move( arr ) )
-{}
+        : data( std::move( arr ) ){}
 
 template <size_t dim, typename dataType>
 TVector<dim, dataType> &TVector<dim, dataType>::operator+=( const TVector<dim, dataType> &rhs )
@@ -352,7 +357,7 @@ TVector<dim, dataType> TVector<dim, dataType>::canonical( size_t n, dataType siz
 
 
 template <size_t h, size_t w, typename dataType>
-TMatrix<h, w, dataType>::TMatrix( std::initializer_list<TVector<h,dataType>> initList )
+TMatrix<h, w, dataType>::TMatrix( std::initializer_list<TVector<h, dataType>> initList )
 {
   auto it = initList.begin();
   for( size_t idx = 0; idx < w; ++idx, ++it )
@@ -360,27 +365,27 @@ TMatrix<h, w, dataType>::TMatrix( std::initializer_list<TVector<h,dataType>> ini
 }
 
 template <size_t h, size_t w, typename dataType>
-TMatrix<2,2,double> TMatrix<h,w,dataType>::rotationMatrix2D( double angle )
+TMatrix<2, 2, double> TMatrix<h, w, dataType>::rotationMatrix2D( double angle )
 {
   return { TVector<2>{ std::cos( angle ), -std::sin( angle ) },
-           TVector<2>{ std::sin( angle ),  std::cos( angle ) } };
+           TVector<2>{ std::sin( angle ), std::cos( angle ) } };
 }
 
 template <size_t h, size_t w, typename dataType>
-TMatrix<h,w, dataType> &TMatrix<h,w, dataType>::operator/=( dataType num )
+TMatrix<h, w, dataType> &TMatrix<h, w, dataType>::operator/=( dataType num )
 {
   return *this = *this / num;
 }
 
 
 template <size_t h, size_t w, typename dataType>
-TVector<h,dataType> &TMatrix<h,w,dataType>::operator[]( size_t idx )
+TVector<h, dataType> &TMatrix<h, w, dataType>::operator[]( size_t idx )
 {
   return data[ idx ];
 }
 
 template <size_t h, size_t w, typename dataType>
-const TVector<h,dataType> &TMatrix<h,w,dataType>::operator[]( size_t idx ) const
+const TVector<h, dataType> &TMatrix<h, w, dataType>::operator[]( size_t idx ) const
 {
   return data[ idx ];
 }
@@ -435,16 +440,16 @@ TVector<fDim, fDataType> operator/( TVector<fDim, fDataType> lhs, int rhs )
 
 
 template <size_t h, size_t w, typename dataType>
-TVector<h, dataType> operator*( const TMatrix<h,w,dataType> &lhs, const TVector<w,dataType> &rhs )
+TVector<h, dataType> operator*( const TMatrix<h, w, dataType> &lhs, const TVector<w, dataType> &rhs )
 {
   TVector<h, dataType> result;
   for( size_t i = 0; i < w; ++i )
     result += rhs[ i ] * lhs[ i ];
-  return TVector<h,dataType>( result );
+  return TVector<h, dataType>( result );
 }
 
 template <size_t h, size_t w, typename dataType>
-TMatrix<h,w, dataType> operator/( TMatrix<h,w, dataType> mat, dataType num )
+TMatrix<h, w, dataType> operator/( TMatrix<h, w, dataType> mat, dataType num )
 {
   for( size_t idx = 0; idx < w; ++idx )
     mat.data[ idx ] /= num;

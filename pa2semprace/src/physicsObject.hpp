@@ -1,31 +1,44 @@
 #pragma once
+
 #include "object.hpp"
 #include "manifold.hpp"
 #include "physicsAttributes.hpp"
 
+
 class CRectangle;
+
 class CCircle;
+
 class CComplexObject;
 
 class CPhysicsObject : public CObject
 {
 public:
   CPhysicsObject( TVector<2>, const TPhysicsAttributes &attributes, double = 0 );
+
   ~CPhysicsObject() override = default;
 
   void render( CWindow & ) const override = 0;
+
   virtual TManifold getManifold( CPhysicsObject * ) = 0;
+
   virtual TManifold getManifold( CRectangle * ) = 0;
+
   virtual TManifold getManifold( CCircle * ) = 0;
+
   virtual TManifold getManifold( CComplexObject * ) = 0;
 
   virtual CPhysicsObject &rotate( double );
+
   virtual double rayTrace( const TVector<2> &position,
                            const TVector<2> &direction ) const;
 
   void resetAccumulator();
+
   void applyForce( double );
+
   void applyImpulse( const TVector<2> &, const TVector<2> & );
+
   [[nodiscard]] TVector<2> getLocalVelocity( const TVector<2> & ) const;
 
   TPhysicsAttributes m_attributes;

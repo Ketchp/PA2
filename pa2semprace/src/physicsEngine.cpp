@@ -1,6 +1,7 @@
 #include "physicsEngine.hpp"
 #include "object.hpp"
 
+
 using namespace std;
 
 
@@ -15,7 +16,7 @@ void CPhysicsEngine::reset()
   m_fields.clear();
 }
 
-vector<TManifold> CPhysicsEngine::step( vector<CPhysicsObject*> &objects, double dt )
+vector<TManifold> CPhysicsEngine::step( vector<CPhysicsObject *> &objects, double dt )
 {
   accumulateForces( objects );
   applyForces( objects, dt );
@@ -55,12 +56,12 @@ vector<TManifold> CPhysicsEngine::findCollisions( vector<CPhysicsObject *> &obje
 {
   vector<TManifold> collisions;
   for( size_t a = 0; a < objects.size(); ++a )
-    for( size_t b = a + 1; b < objects.size(); ++b  )
+    for( size_t b = a + 1; b < objects.size(); ++b )
     {
-      if( objects[a]->m_boundingRadius + objects[b]->m_boundingRadius <
-              ( objects[a]->m_position - objects[b]->m_position ).norm() )
+      if( objects[ a ]->m_boundingRadius + objects[ b ]->m_boundingRadius <
+          ( objects[ a ]->m_position - objects[ b ]->m_position ).norm() )
         continue;
-      TManifold collision = objects[a]->getManifold( objects[b] );
+      TManifold collision = objects[ a ]->getManifold( objects[ b ] );
       if( collision )
         collisions.push_back( collision );
     }
@@ -101,7 +102,7 @@ void CPhysicsEngine::applyImpulse( CPhysicsObject &first,
 
   TVector<2> frictionImpulse = getFrictionImpulse( first, second, contactPoint );
   double frictionCoefficientSq = first.m_attributes.frictionCoefficient
-                              * second.m_attributes.frictionCoefficient;
+                                 * second.m_attributes.frictionCoefficient;
 
   if( frictionImpulse.squareNorm() > frictionCoefficientSq * normalImpulse.squareNorm() )
     frictionImpulse.stretchTo( sqrt( frictionCoefficientSq ) * normalImpulse.norm() );
@@ -168,7 +169,6 @@ TVector<2> CPhysicsEngine::getRelativeVelocity( const CPhysicsObject &first,
 }
 
 
-
 double CPhysicsEngine::getCombinedInvMass( const CPhysicsObject &first,
                                            const CPhysicsObject &second,
                                            const TVector<2> &point,
@@ -188,10 +188,10 @@ double CPhysicsEngine::getObjectInvMass( const CPhysicsObject &object,
   TVector<3> projection = TVector<3>::changeDim( direction );
 
   double angMass = crossProduct(
-                       crossProduct(
-                           lever,
-                           projection ),
-                       lever ).dot( projection ) * object.m_attributes.invAngularMass;
+          crossProduct(
+                  lever,
+                  projection ),
+          lever ).dot( projection ) * object.m_attributes.invAngularMass;
 
   return linearInvMass + angMass;
 }
