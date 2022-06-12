@@ -5,7 +5,7 @@
 void jsonParserTest()
 {
   {
-    CJsonDocument obj( "example_1.json" );
+    CJsonDocument obj( "jsonTests/example_1.json" );
 
     auto &object1 = obj.get().getObject();
 
@@ -53,7 +53,7 @@ void jsonParserTest()
     assert( array1[ 1 ].toString() == "XML" );
   }
   {
-    CJsonDocument obj( "example_level_1.json" );
+    CJsonDocument obj( "jsonTests/example_level_1.json" );
     auto &value = obj.get().getObject();
 
     auto &screen = value[ "screen" ].getObject();
@@ -99,6 +99,683 @@ void jsonParserTest()
     assert( items[ 1 ][ "color" ][ 1 ].toInt() == 255 );
     assert( items[ 1 ][ "color" ][ 2 ].toInt() ==   0 );
     assert( items[ 1 ][ "color" ][ 3 ].toInt() == 127 );
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_double_huge_neg_exp.json" );
+    try
+    {
+      double num = doc.get()[0].toDouble();
+      assert( num && "Shouldn't got here" == nullptr );
+    }
+    catch( const std::out_of_range & )
+    {}
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_huge_exp.json" );
+    try
+    {
+      double num = doc.get()[0].toDouble();
+      std::cout << num << std::endl;
+      assert( num && "Shouldn't got here" == nullptr );
+    }
+    catch( const std::out_of_range & )
+    {}
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_neg_int_huge_exp.json" );
+    try
+    {
+      double num = doc.get()[0].toDouble();
+      assert( num && "Shouldn't got here" == nullptr );
+    }
+    catch( const std::out_of_range & )
+    {}
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_pos_double_huge_exp.json" );
+    try
+    {
+      double num = doc.get()[0].toDouble();
+      assert( num && "Shouldn't got here" == nullptr );
+    }
+    catch( const std::out_of_range & )
+    {}
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_real_neg_overflow.json" );
+    try
+    {
+      double num = doc.get()[0].toDouble();
+      assert( num && "Shouldn't got here" == nullptr );
+    }
+    catch( const std::out_of_range & )
+    {}
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_real_pos_overflow.json" );
+    try
+    {
+      double num = doc.get()[0].toDouble();
+      assert( num && "Shouldn't got here" == nullptr );
+    }
+    catch( const std::out_of_range & )
+    {}
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_real_underflow.json" );
+    try
+    {
+      double num = doc.get()[0].toDouble();
+      assert( num && "Shouldn't got here" == nullptr );
+    }
+    catch( const std::out_of_range & )
+    {}
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_too_big_neg_int.json" );
+    double num = doc.get()[0].toDouble();
+    assert( num == -123123123123123123123123123123. );
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_too_big_pos_int.json" );
+    double num = doc.get()[0].toDouble();
+    assert( num == 100000000000000000000. );
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_number_very_big_negative_int.json" );
+    double num = doc.get()[0].toDouble();
+    assert( num == -237462374673276894279832749832423479823246327846. );
+  }
+  {
+    CJsonDocument doc( "jsonTests/i_structure_500_nested_arrays.json" );
+    const CJsonArray &arr = doc.get().getArray()[0].getArray()[0].getArray();
+    assert( arr.m_type == EJsonType::jsonArrayType );
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/i_structure_UTF-8_BOM_empty_object.json" );
+      const CJsonObject &obj = doc.get().getObject();
+      assert( obj.size() && "Shouldn't got here" == nullptr );
+    }
+    catch( const std::invalid_argument & )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_1_true_without_comma.json" );
+      assert( "Missing comma" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_colon_instead_of_comma.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_comma_after_close.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_comma_and_number.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_double_comma.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_double_extra_comma.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_extra_close.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_extra_comma.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_incomplete.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_incomplete_invalid_value.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_inner_array_no_comma.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_items_separated_by_semicolon.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_just_comma.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_just_minus.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_missing_value.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_newlines_unclosed.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_number_and_comma.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_number_and_several_commas.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_newlines_unclosed.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_star_inside.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_unclosed.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_unclosed_trailing_comma.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_unclosed_with_new_lines.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_array_unclosed_with_object_inside.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_incomplete_false.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_incomplete_null.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_incomplete_true.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_++.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_+1.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_+Inf.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_.2e-3.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_.-1.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_0.1.2.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_0.3e+.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_0.3e.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_0.e1.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_0_capital_E+.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_0_capital_E.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_0e+.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_0e.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_1.0e+.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_1.0e.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_1.0e-.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_1_000.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_1eE2.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_2.e+3.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_2.e3.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_2.e-3.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_9.e+.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_-1.0..json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_-01.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_-2..json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_-NaN.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_expression.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_hex_1_digit.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_hex_2_digits.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_Inf.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_infinity.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_invalid+-.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_invalid-negative-real.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_minus_infinity.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_minus_sign_with_trailing_garbage.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_minus_space_1.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
+  }
+  {
+    try
+    {
+      CJsonDocument doc( "jsonTests/n_number_NaN.json" );
+      assert( "Wrong JSON" == nullptr );
+    }
+    catch( const std::invalid_argument &e )
+    {}
   }
 }
 
