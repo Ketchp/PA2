@@ -2,14 +2,31 @@
 
 #include "physicsObject.hpp"
 
-
+/**
+ * @class CCircle
+ */
 class CCircle : public CPhysicsObject
 {
 public:
-  CCircle( TVector<2>, double size, double density );
+  /**
+   * Constructor of circle
+   * @param centre position of circle centre
+   * @param radius radius of circle
+   * @param density circle density
+   */
+  CCircle( TVector<2> centre, double radius, double density );
 
-  void render( CWindow & ) const override;
+  /**
+   * Renders circle to window
+   * @param window target window
+   */
+  void render( CWindow &window ) const override;
 
+  /**
+   * method for performing rotation on circle
+   * @param angle angle to rotate object
+   * @return CPhysicsObject instance
+   */
   CPhysicsObject &rotate( double angle ) override;
 
   TManifold getManifold( CPhysicsObject * ) override;

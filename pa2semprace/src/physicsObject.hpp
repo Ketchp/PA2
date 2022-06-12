@@ -42,8 +42,10 @@ public:
   [[nodiscard]] TVector<2> getLocalVelocity( const TVector<2> & ) const;
 
   TPhysicsAttributes m_attributes;
-  double m_rotation;
   double m_boundingRadius = HUGE_VAL;
+
+private:
+  double m_rotation;
 };
 
 namespace collision
