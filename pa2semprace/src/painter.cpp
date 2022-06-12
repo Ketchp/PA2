@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const double CPainter::minDrawLength = 30;
+const double CPainter::minDrawLength = 20;
 
 
 CPainter::CPainter( std::function<void()> callback )

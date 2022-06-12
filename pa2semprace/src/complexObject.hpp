@@ -20,16 +20,16 @@ public:
 
   TManifold getManifold( CComplexObject * ) override;
 
-  std::vector<TContactPoint> getCircleCollision( const TVector<2> &centre,
-                                                 double radius ) const;
+  [[nodiscard]] std::vector<TContactPoint> getCircleCollision( const TVector<2> &centre,
+                                                               double radius ) const;
 
   std::vector<TContactPoint> getNodeCollisions( CComplexObject *,
                                                 const TVector<2> &node ) const;
 
   CPhysicsObject &rotate( double angle ) override;
 
-  double rayTrace( const TVector<2> &position,
-                   const TVector<2> &direction ) const override;
+  [[nodiscard]] double rayTrace( const TVector<2> &position,
+                                 const TVector<2> &direction ) const override;
 
   void addVertex( const TVector<2> & );
 

@@ -27,12 +27,12 @@ public:
 
 enum class EJsonType
 {
-  jsonObjectType,
-  jsonArrayType,
-  jsonNumberType,
-  jsonStringType,
-  jsonBoolType,
-  jsonNullType
+  jsonObjectType [[maybe_unused]],
+  jsonArrayType [[maybe_unused]],
+  jsonNumberType [[maybe_unused]],
+  jsonStringType [[maybe_unused]],
+  jsonBoolType [[maybe_unused]],
+  jsonNullType [[maybe_unused]]
 };
 
 class CJsonObject;
@@ -72,17 +72,17 @@ public:
 
   [[nodiscard]] const CJsonArray &getArray() const;
 
-  [[nodiscard]] const CJsonString &getJsonString() const;
+  [[nodiscard, maybe_unused]] const CJsonString &getJsonString() const;
 
-  [[nodiscard]] const CJsonNumber &getJsonNumber() const;
+  [[nodiscard, maybe_unused]] const CJsonNumber &getJsonNumber() const;
 
-  [[nodiscard]] const CJsonBool &getJsonBool() const;
+  [[nodiscard, maybe_unused]] const CJsonBool &getJsonBool() const;
 
-  [[nodiscard]] const CJsonNull &getJsonNull() const;
+  [[nodiscard, maybe_unused]] const CJsonNull &getJsonNull() const;
 
   [[nodiscard]] virtual const std::string &toString() const;
 
-  [[nodiscard]] virtual int toInt() const;
+  [[nodiscard, maybe_unused]] virtual int toInt() const;
 
   [[nodiscard]] virtual double toDouble() const;
 

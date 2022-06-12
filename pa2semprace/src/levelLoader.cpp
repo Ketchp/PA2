@@ -104,8 +104,14 @@ void CLevelLoader::loadSceneSize( const CJsonObject &sceneDescription )
     if( sceneSize.size() != 2 )
       throw invalid_argument( "Scene size must be array of size 2.\n" );
 
-    m_window.resizeView( 0, sceneSize[ 0 ].toDouble(),
-                         0, sceneSize[ 1 ].toDouble() );
+    double width = sceneSize[ 0 ].toDouble(),
+           height = sceneSize[ 1 ].toDouble();
+
+    if( width <= 0 || height <= 0 )
+      throw invalid_argument( "Scene must have positive size.\n" );
+
+    m_window.resizeView( 0, width,
+                         0, height );
   }
   catch( const bad_cast & )
   {
@@ -141,6 +147,13 @@ void CLevelLoader::loadPenAttributes( const CJsonObject &sceneDescription )
 
     if( penDescription.count( "width" ) )
       m_painter.drawWidth = penDescription[ "width" ].toDouble();
+
+    if( m_painter.density <= 0 )
+      throw invalid_argument( "Draw density must be positive.\n" );
+
+    if( m_painter.drawWidth <= 0 )
+      throw invalid_argument( "Draw width must be positive.\n" );
+
   }
   catch( const bad_cast & )
   {
@@ -242,6 +255,8 @@ void CLevelLoader::loadCircle( const CJsonObject &circleDescription,
   try
   {
     double radius = circleDescription[ "size" ].toDouble();
+    if( radius <= 0 )
+      throw invalid_argument( "Radius must be positive.\n" );
     double density = loadDensity( circleDescription );
     TVector<2> position = loadVector2D( circleDescription[ "position" ].getArray() );
     CPhysicsObject *newObj = new CCircle( position, radius, density );
@@ -265,6 +280,8 @@ void CLevelLoader::loadRectangle( const CJsonObject &rectDescription,
   {
     TVector<2> position = loadVector2D( rectDescription[ "position" ].getArray() );
     TVector<2> size = loadVector2D( rectDescription[ "size" ].getArray() );
+    if( size[ 0 ] <= 0 || size[ 1 ] <= 0 )
+      throw invalid_argument( "Rectangle size must be positive.\n" );
     double rotation = loadRotation( rectDescription );
     double density = loadDensity( rectDescription );
     CPhysicsObject *newObj = new CRectangle( position, size,
@@ -304,9 +321,12 @@ void CLevelLoader::loadText( const CJsonObject &textDescription, ETag tags )
 
 double CLevelLoader::loadDensity( const CJsonObject &itemDescription )
 {
-  if( itemDescription.count( "physics" ) && itemDescription[ "physics" ].count( "density" ) )
-    return itemDescription[ "physics" ][ "density" ].toDouble();
-  return HUGE_VAL;
+  if( !itemDescription.count( "physics" ) || !itemDescription[ "physics" ].count( "density" ) )
+    return HUGE_VAL;
+  double density = itemDescription[ "physics" ][ "density" ].toDouble();
+  if( density <= 0 )
+    throw invalid_argument( "Density must be positive.\n" );
+  return density;
 }
 
 double CLevelLoader::loadRotation( const CJsonObject &itemDescription )
