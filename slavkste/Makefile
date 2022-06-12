@@ -32,15 +32,14 @@ $(TARGET): $(OBJ)
 	$(CXX) $(LXX_FLAGS) -o $(TARGET) $^ $(LIBS)
 
 .PHONY: test
-test: \
-$(OBJ_DIR)/jsonParser.o \
-$(OBJ_DIR)/linearAlgebra.o
+test: compile
 	g++ -o examples/tests/tester -g -Wall -std=c++17 -pedantic \
- -Wno-long-long -Werror $^ examples/tests/tester.cpp
+ -Wno-long-long -Werror $(OBJ_DIR)/jsonParser.o $(OBJ_DIR)/linearAlgebra.o examples/tests/tester.cpp
 	( cd ./examples/tests && exec valgrind --leak-check=full ./tester )
 
+
 .PHONY: run
-run: $(TARGET)
+run:
 	./$(TARGET)
 
 .PHONY: doc
@@ -53,5 +52,6 @@ clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf doc
 	rm -f $(TARGET)
+	rm -f examples/tests/tester
 
 -include Makefile.d

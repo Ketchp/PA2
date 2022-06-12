@@ -6,9 +6,9 @@ using namespace std;
 CPhysicsObject::CPhysicsObject( TVector<2> position,
                                 const TPhysicsAttributes &attributes,
                                 double angle )
-        : CObject( position ),
-          m_attributes( attributes ),
-          m_rotation( angle ){}
+  : CObject( position ),
+    m_attributes( attributes ),
+    m_rotation( angle ){}
 
 CPhysicsObject &CPhysicsObject::rotate( double angle )
 {
