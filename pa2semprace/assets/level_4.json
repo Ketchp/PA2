@@ -1,12 +1,12 @@
 {
   "scene":
   {
-    "title": "Level III",
+    "title": "Level IV",
     "size": [ 1000, 800 ],
     "fields": [ "gravity" ],
     "pen":
     {
-      "width": 15,
+      "width": 12,
       "density": 250
     },
     "next": "assets/game_won.json"

@@ -6,8 +6,8 @@
     "fields": [ "gravity" ],
     "pen":
     {
-      "width": 15,
-      "density": 50
+      "width": 10,
+      "density": 250
     },
     "next": "assets/tutorial_3.json"
   },

@@ -6,7 +6,7 @@
     "fields": [ "gravity" ],
     "pen":
     {
-      "width": 15,
+      "width": 10,
       "density": 50
     },
     "next": "assets/level_1.json"
