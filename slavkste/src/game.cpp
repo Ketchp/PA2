@@ -200,7 +200,7 @@ bool CGame::playerOnScreen()
     return true;
   const TVector<2> &pos = player.m_position;
   const TVector<2> screenSize = m_window.getViewSize();
-  return ( pos[ 0 ] > 0 && pos[ 1 ] > 0 &&
+  return ( pos[ 0 ] > 0 && pos[ 1 ] > -100 &&
             pos[ 0 ] < screenSize[ 0 ] &&
             pos[ 1 ] < screenSize[ 1 ] );
 }
