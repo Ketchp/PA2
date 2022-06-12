@@ -98,13 +98,17 @@ void CGame::drawHealthBar()
 
     TVector<2> screenSize = m_window.getViewSize();
 
-    TVector<2> barBottom = { screenSize[ 0 ] / 25, screenSize[ 1 ] / 20 };
-    TVector<2> fullBar = screenSize * 0.9;
+    TVector<2> barBottom = { screenSize[ 0 ] * 0.04, screenSize[ 1 ] * 0.05 };
+    TVector<2> fullBar = screenSize * 0.85;
     fullBar[ 0 ] = 0;
 
     m_window.drawLine( barBottom,
                        barBottom + fullBar * obj->m_attributes.integrity,
                        20, ETag::HEALTH );
+
+    string health = to_string( (int)( 100 * obj->m_attributes.integrity ) ) + '%';
+
+    m_window.drawText( { { screenSize[ 0 ] * 0.05, screenSize[ 1 ] * 0.95 } }, health );
   }
 }
 
