@@ -89,17 +89,17 @@ const CJsonNull &CJsonValue::getJsonNull() const
 
 const string &CJsonValue::toString() const
 {
-  throw invalid_argument( "Wrong type." );
+  throw invalid_argument( "Wrong type for string conversion." );
 }
 
 int CJsonValue::toInt() const
 {
-  throw invalid_argument( "Wrong type." );
+  throw invalid_argument( "Wrong type for int conversion." );
 }
 
 double CJsonValue::toDouble() const
 {
-  throw invalid_argument( "Wrong type." );
+  throw invalid_argument( "Wrong type for real conversion." );
 }
 
 size_t CJsonValue::count( const string & ) const
