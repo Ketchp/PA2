@@ -1,0 +1,23 @@
+{
+  "scene":
+  {
+    "title": "Level VII",
+    "size": [ 1000, 800 ],
+    "fields": [ "gravity" ],
+    "pen":
+    {
+      "width": 10,
+      "density": 250
+    },
+    "next": "assets/game_won.json"
+  },
+  "items":
+  [
+    { "type": "circle", "position": [ 400, 450 ], "size": 40, "physics": { "density": 30 }, "tag": "player" },
+    { "type": "circle", "position": [ 680, 450 ], "size": 40, "physics": { "density": 30 }, "tag": "target" },
+
+
+    { "type": "rectangle", "position": [ 540, 400 ], "size": [ 400,  20 ] },
+    { "type": "rectangle", "position": [ 540, 600 ], "size": [  20, 400 ] }
+  ]
+}
