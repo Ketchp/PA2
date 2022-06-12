@@ -7,7 +7,7 @@
 #include <iostream>
 
 /**
- * @class Base class for all drawable items.
+ * Base class for all drawable items.
  */
 class CObject
 {

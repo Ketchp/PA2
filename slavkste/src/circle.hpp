@@ -3,7 +3,7 @@
 #include "physicsObject.hpp"
 
 /**
- * @class CCircle
+ * Class for representation of physics circle.
  */
 class CCircle : public CPhysicsObject
 {
@@ -59,14 +59,21 @@ public:
 
   /**
    * Calculates largest distance ray can travel from position in direction.
-   * @return Positive double.
+   * @param position
+   * @param direction
+   * @return Non-negative double.
    */
   [[nodiscard]] double rayTrace( const TVector<2> &position,
                                  const TVector<2> &direction ) const override;
 
   /**
-   * Static ray trace for ray( position, direction ) and circle( centre, radius ).
-   * @return Positive double.
+   * Calculates largest distance ray can travel from position in direction
+   * until it hits circle with radius at centre.
+   * @param position
+   * @param direction
+   * @param centre
+   * @param radius
+   * @return
    */
   [[nodiscard]] static double rayTrace( const TVector<2> &position,
                                         const TVector<2> &direction,

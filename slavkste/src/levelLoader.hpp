@@ -18,59 +18,189 @@ enum class EActionType
   resetLevel
 };
 
+
+/**
+ * Class for loading and parsing files describing levels.
+ */
 class CLevelLoader
 {
 public:
-  CLevelLoader( CWindow &,
-                CPhysicsEngine &,
-                std::vector<CPhysicsObject *> &,
-                std::vector<CText *> &,
-                CPainter &,
-                std::string );
+  /**
+   * Creates level loader with first file levelFileName.
+   * Managing: window, engine, objects, texts, painter.
+   * @param window
+   * @param engine
+   * @param objects
+   * @param texts
+   * @param painter
+   * @param levelFileName
+   */
+  CLevelLoader( CWindow &window,
+                CPhysicsEngine &engine,
+                std::vector<CPhysicsObject *> &objects,
+                std::vector<CText *> &texts,
+                CPainter &painter,
+                std::string levelFileName );
 
-  void loadLevel( EActionType = EActionType::resetLevel );
+  /**
+   * Loads current or new level.
+   * @param action decides level to load.
+   */
+  void loadLevel( EActionType action = EActionType::resetLevel );
 
+  /**
+   * Show if health-bar should be displayed.
+   */
   bool healthBar = true;
+
 private:
-  std::string m_currentLevelFileName, m_nextLevelFileName;
+  /**
+   * Name of current level file.
+   */
+  std::string m_currentLevelFileName;
+
+  /**
+   * Name of next level file.
+   */
+  std::string m_nextLevelFileName;
+
+  /**
+   * Managed window.
+   */
   CWindow &m_window;
+
+  /**
+   * Managed engine.
+   */
   CPhysicsEngine &m_engine;
+
+  /**
+   * Managed objects.
+   */
   std::vector<CPhysicsObject *> &m_objects;
+
+  /**
+   * Managed texts.
+   */
   std::vector<CText *> &m_texts;
+
+  /**
+   * Managed painter.
+   */
   CPainter &m_painter;
+
+  /**
+   * Shows if level has player.
+   */
   bool hasPlayer = false;
 
-  void loadScene( const CJsonObject & );
+  /**
+   * Loads general information about scene.
+   * @param sceneDescription
+   */
+  void loadScene( const CJsonObject &sceneDescription );
 
-  void loadTitle( const CJsonObject & );
+  /**
+   * Loads scene title.
+   * @param sceneDescription
+   */
+  void loadTitle( const CJsonObject &sceneDescription );
 
-  void loadSceneSize( const CJsonObject & );
+  /**
+   * Loads scene size.
+   * @param sceneDescription
+   */
+  void loadSceneSize( const CJsonObject &sceneDescription );
 
-  void loadFields( const CJsonArray & );
+  /**
+   * Loads all scene force fields.
+   * @param fieldsDescription
+   */
+  void loadFields( const CJsonArray &fieldsDescription );
 
-  void loadField( const CJsonValue & );
+  /**
+   * Loads single force field.
+   * @param fieldDescription
+   */
+  void loadField( const CJsonValue &fieldDescription );
 
-  void loadPenAttributes( const CJsonObject & );
+  /**
+   * Loads pen attributes.
+   * @param sceneDescription
+   */
+  void loadPenAttributes( const CJsonObject &sceneDescription );
 
-  void loadNextFileName( const CJsonObject & );
+  /**
+   * Loads next level filename.
+   * @param sceneDescription
+   */
+  void loadNextFileName( const CJsonObject &sceneDescription );
 
-  void loadItems( const CJsonArray & );
+  /**
+   * Loads items.
+   * @param itemsDescription
+   */
+  void loadItems( const CJsonArray &itemsDescription );
 
-  void loadItem( const CJsonObject & );
+  /**
+   * Loads single item.
+   * @param itemDescription
+   */
+  void loadItem( const CJsonObject &itemDescription );
 
-  ETag loadTags( const CJsonObject & );
+  /**
+   * Loads item tags.
+   * @param itemDescription
+   * @return Item tag.
+   */
+  ETag loadTags( const CJsonObject &itemDescription );
 
-  ETag loadTag( const std::string & );
+  /**
+   * Loads tag from string representation.
+   * @param tag string representation of tag.
+   * @return Tag.
+   */
+  ETag loadTag( const std::string &tag );
 
-  static TVector<2> loadVector2D( const CJsonArray & );
+  /**
+   * Loads two dimensional vector.
+   * @param jsonArray
+   * @return TVector<2>
+   */
+  static TVector<2> loadVector2D( const CJsonArray &jsonArray );
 
-  void loadCircle( const CJsonObject &, ETag );
+  /**
+   * Loads circle
+   * @param circleDescription
+   * @param tags Circle tags.
+   */
+  void loadCircle( const CJsonObject &circleDescription, ETag tags );
 
-  void loadRectangle( const CJsonObject &, ETag );
+  /**
+   * Loads rectangle.
+   * @param rectDescription
+   * @param tags Rectangle tags.
+   */
+  void loadRectangle( const CJsonObject &rectDescription, ETag tags );
 
-  void loadText( const CJsonObject &, ETag );
+  /**
+   * Loads text.
+   * @param textDescription
+   * @param tags Text tags.
+   */
+  void loadText( const CJsonObject &textDescription, ETag tags );
 
-  static double loadDensity( const CJsonObject & );
+  /**
+   * Loads item density.
+   * @param itemDescription
+   * @return Item density.
+   */
+  static double loadDensity( const CJsonObject &itemDescription );
 
-  static double loadRotation( const CJsonObject & );
+  /**
+   * Loads item rotation
+   * @param itemDescription
+   * @return Rotation.
+   */
+  static double loadRotation( const CJsonObject &itemDescription );
 };

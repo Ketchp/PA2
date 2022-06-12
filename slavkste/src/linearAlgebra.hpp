@@ -14,34 +14,99 @@ struct TVector;
 template <size_t h, size_t w, typename dataType>
 struct TMatrix;
 
-
+/**
+ * @tparam fDim vector dimension
+ * @tparam fDataType vector dataType
+ * @param lhs
+ * @param rhs
+ * @return sum of lhs and rhs
+ */
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator+( TVector<fDim, fDataType> lhs,
                                            const TVector<fDim, fDataType> &rhs );
 
+/**
+ * @tparam fDim vector dimension
+ * @tparam fDataType vector dataType
+ * @param lhs
+ * @param rhs
+ * @return lhs minus rhs
+ */
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator-( TVector<fDim, fDataType> lhs,
                                            const TVector<fDim, fDataType> &rhs );
 
+/**
+ * @tparam fDim vector dimension
+ * @tparam fDataType vector dataType
+ * @param lhs
+ * @param rhs
+ * @return rhs multiplied by lhs
+ */
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator*( fDataType lhs, TVector<fDim, fDataType> rhs );
 
+/**
+ * @tparam fDim vector dimension
+ * @tparam fDataType vector dataType
+ * @param lhs
+ * @param rhs
+ * @return lhs multiplied by rhs;
+ */
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator*( TVector<fDim, fDataType> lhs, fDataType rhs );
 
+/**
+ * @tparam fDim vector dimension
+ * @tparam fDataType vector dataType
+ * @param lhs
+ * @param rhs
+ * @return lhs divided by rhs
+ */
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator/( TVector<fDim, fDataType> lhs, fDataType rhs );
 
+/**
+ * @tparam fDim vector dimension
+ * @tparam fDataType vector dataType
+ * @param lhs
+ * @param rhs
+ * @return lhs divided by rhs
+ */
 template <size_t fDim, typename fDataType>
 inline TVector<fDim, fDataType> operator/( TVector<fDim, fDataType> lhs, int rhs );
 
+/**
+ *
+ * @tparam h matrix height
+ * @tparam w matrix width
+ * @tparam dataType matrix and vector dataType
+ * @param lhs
+ * @param rhs
+ * @return linear combination of matrix column-space
+ */
 template <size_t h, size_t w, typename dataType>
 inline TVector<h, dataType> operator*( const TMatrix<h, w, dataType> &lhs, const TVector<w, dataType> &rhs );
 
+/**
+ *
+ * @tparam h matrix height
+ * @tparam w matrix width
+ * @tparam dataType matrix and vector dataType
+ * @param mat
+ * @param num
+ * @return matrix divided by num
+ */
 template <size_t h, size_t w, typename dataType>
 inline TMatrix<h, w, dataType> operator/( TMatrix<h, w, dataType> mat, dataType num );
 
-
+/**
+ * Compares double with precision of precision * epsilon.
+ * @param a
+ * @param b
+ * @param precision
+ * @return true if a, b are almost equal.
+ */
 bool equalDoubles( double a, double b, double precision = 100 );
 
 template <typename dataType>
@@ -60,88 +125,252 @@ inline std::ostream &operator<<( std::ostream &os, const TVector<dim, dataType> 
   return os << std::string( " )" );
 }
 
+/**
+ * Class for representation of mathematical vector
+ * @tparam dim vector dimension
+ * @tparam dataType dataType of base field
+ */
 template <size_t dim, typename dataType = double>
 struct TVector
 {
+  /**
+   * Array of vector values.
+   */
   std::array<dataType, dim> data;
 
+  /**
+   * Vector with all values initialised to 0;
+   */
   TVector();
 
-  TVector( std::initializer_list<dataType> );
+  /**
+   * Vector initialised from list.
+   * @param initList
+   */
+  TVector( std::initializer_list<dataType> initList );
 
-  explicit TVector( std::array<dataType, dim> );
+  /**
+   * vector initialised from array.
+   * @param initArr
+   */
+  explicit TVector( std::array<dataType, dim> initArr );
 
-  inline TVector<dim, dataType> &operator+=( const TVector<dim, dataType> & );
+  /**
+   * Add other vector to this.
+   * @param rhs other vector
+   * @return *this
+   */
+  inline TVector<dim, dataType> &operator+=( const TVector<dim, dataType> &rhs );
 
-  inline TVector<dim, dataType> &operator-=( const TVector<dim, dataType> & );
+  /**
+   * Subtracts other vector from this.
+   * @param rhs other vector
+   * @return *this
+   */
+  inline TVector<dim, dataType> &operator-=( const TVector<dim, dataType> &rhs );
 
-  inline TVector<dim, dataType> &operator*=( dataType );
+  /**
+   * Multiplies vector by rhs.
+   * @param rhs
+   * @return *this
+   */
+  inline TVector<dim, dataType> &operator*=( dataType rhs );
 
-  inline TVector<dim, dataType> &operator/=( dataType );
+  /**
+   * Divides vector by rhs.
+   * @param rhs
+   * @return *this
+   */
+  inline TVector<dim, dataType> &operator/=( dataType rhs );
 
+  /**
+   * @return Negative vector
+   */
   inline TVector<dim, dataType> operator-() const;
 
+  /**
+   * Normalises vector.
+   * @return *this
+   */
   inline TVector<dim, dataType> &normalize();
 
+  /**
+   * @return normalized vector
+   */
   [[nodiscard]] inline TVector<dim, dataType> normalized() const;
 
-  inline dataType &operator[]( size_t );
+  /**
+   * @param index
+   * @return Value at position index.
+   */
+  inline dataType &operator[]( size_t index );
 
-  inline const dataType &operator[]( size_t ) const;
+  /**
+   * @param index
+   * @return Value at position index.
+   */
+  inline const dataType &operator[]( size_t index ) const;
 
+  /**
+   * @return true if vector is valid.
+   */
   inline explicit operator bool() const;
 
+  /**
+   * @return Norm of vector.
+   */
   [[nodiscard]] inline dataType norm() const;
 
+  /**
+   * @return Squared norm of vector.
+   */
   [[nodiscard]] inline dataType squareNorm() const;
 
-  [[nodiscard]] inline dataType distance( const TVector<dim, dataType> & ) const;
+  /**
+   * @param other
+   * @return Euclidean distance from other vector.
+   */
+  [[nodiscard]] inline dataType distance( const TVector<dim, dataType> &other ) const;
 
-  [[nodiscard]] inline dataType squareDistance( const TVector<dim, dataType> & ) const;
+  /**
+   * @param other
+   * @return Squared Euclidean distance from other vector.
+   */
+  [[nodiscard]] inline dataType squareDistance( const TVector<dim, dataType> &other ) const;
 
-  [[nodiscard]] inline dataType dot( const TVector<dim, dataType> & ) const;
+  /**
+   * @param other
+   * @return Dot product with other vector.
+   */
+  [[nodiscard]] inline dataType dot( const TVector<dim, dataType> &other ) const;
 
-  TVector<dim, dataType> &rotate( double );
+  /**
+   * Rotates vector by angle.( Counter clockwise )
+   * @param angle
+   * @return *this
+   */
+  TVector<dim, dataType> &rotate( double angle );
 
-  [[nodiscard]] TVector<dim, dataType> rotated( double ) const;
+  /**
+   * @param angle
+   * @return Vector rotated by angle. ( Counter clockwise )
+   */
+  [[nodiscard]] TVector<dim, dataType> rotated( double angle ) const;
 
-  inline TVector<dim, dataType> &rejectFrom( const TVector<dim, dataType> & );
+  /**
+   * Makes vector orthogonal to other,
+   * whilst preserving distance from space generated by other.
+   * @param other
+   * @return *this
+   */
+  inline TVector<dim, dataType> &rejectFrom( const TVector<dim, dataType> &other );
 
-  [[nodiscard]] inline TVector<dim, dataType> rejectedFrom( const TVector<dim, dataType> & ) const;
+  /**
+   * @param other
+   * @return Orthogonal vector to other with same distance from span( other ) as *this
+   */
+  [[nodiscard]] inline TVector<dim, dataType> rejectedFrom( const TVector<dim, dataType> &other ) const;
 
-  inline TVector<dim, dataType> &projectTo( const TVector<dim, dataType> & );
+  /**
+   * Projects vector to other
+   * @param other
+   * @return *this
+   */
+  inline TVector<dim, dataType> &projectTo( const TVector<dim, dataType> &other );
 
-  [[nodiscard]] inline TVector<dim, dataType> projectedTo( const TVector<dim, dataType> & ) const;
+  /**
+   * @param other
+   * @return Closest point from span( other ) as by distance induced from standard norm.
+   */
+  [[nodiscard]] inline TVector<dim, dataType> projectedTo( const TVector<dim, dataType> &other ) const;
 
-  inline TVector<dim, dataType> &stretchTo( dataType );
+  /**
+   * Stretches vector to have norm of length.
+   * @param length
+   * @return *this
+   */
+  inline TVector<dim, dataType> &stretchTo( dataType length );
 
-  [[nodiscard]] inline TVector<dim, dataType> stretchedTo( dataType ) const;
+  /**
+   * @param length
+   * @return this vector stretched to length.
+   */
+  [[nodiscard]] inline TVector<dim, dataType> stretchedTo( dataType length ) const;
 
+  /**
+   * @param n
+   * @return Canonical vector in axis n.
+   */
   inline static TVector<dim, dataType> canonical( size_t n );
 
+  /**
+   * @param n
+   * @param size
+   * @return Canonical vector in axis n stretched to size.
+   */
   inline static TVector<dim, dataType> canonical( size_t n, dataType size );
 
+  /**
+   * @return Clockwise distance from canonical vector.
+   */
   [[nodiscard]] double getAngle() const;
 };
 
-
+/**
+ * Class for representation of matrices.
+ * @tparam h dimension of columns
+ * @tparam w dimension of rows
+ * @tparam dataType dataType of base field
+ */
 template <size_t h, size_t w, typename dataType = double>
 struct TMatrix
 {
+  /**
+   * Array of column vectors.
+   */
   std::array<TVector<h, dataType>, w> data;
 
-  TMatrix( std::initializer_list<TVector<h, dataType>> );
+  /**
+   * Initialises matrix with column vectors.
+   * @param initList
+   */
+  TMatrix( std::initializer_list<TVector<h, dataType>> initList );
 
+  /**
+   * @param angle
+   * @return Rotation matrix.
+   */
   inline static TMatrix<2, 2, double> rotationMatrix2D( double angle );
 
+  /**
+   * Divides matrix by num.
+   * @param num
+   * @return *this
+   */
   inline TMatrix<h, w, dataType> &operator/=( dataType num );
 
-  inline TVector<h, dataType> &operator[]( size_t );
+  /**
+   * @param index
+   * @return Vector at index column.
+   */
+  inline TVector<h, dataType> &operator[]( size_t index );
 
-  inline const TVector<h, dataType> &operator[]( size_t ) const;
+  /**
+   * @param index
+   * @return Vector at index column.
+   */
+  inline const TVector<h, dataType> &operator[]( size_t index ) const;
 
+  /**
+   * @return Matrix determinant.
+   */
   [[nodiscard]] inline dataType det() const;
 
+  /**
+   * Inverts matrix.
+   * @return true on success
+   * @return false if matrix not regular
+   */
   [[nodiscard]] bool invert();
 };
 
@@ -196,15 +425,15 @@ TVector<dim, dataType> TVector<dim, dataType>::operator-() const
 }
 
 template <size_t dim, typename dataType>
-dataType &TVector<dim, dataType>::operator[]( size_t idx )
+dataType &TVector<dim, dataType>::operator[]( size_t index )
 {
-  return data[ idx ];
+  return data[ index ];
 }
 
 template <size_t dim, typename dataType>
-const dataType &TVector<dim, dataType>::operator[]( size_t idx ) const
+const dataType &TVector<dim, dataType>::operator[]( size_t index ) const
 {
-  return data[ idx ];
+  return data[ index ];
 }
 
 template <size_t dim, typename dataType>
@@ -343,15 +572,15 @@ TMatrix<h, w, dataType> &TMatrix<h, w, dataType>::operator/=( dataType num )
 
 
 template <size_t h, size_t w, typename dataType>
-TVector<h, dataType> &TMatrix<h, w, dataType>::operator[]( size_t idx )
+TVector<h, dataType> &TMatrix<h, w, dataType>::operator[]( size_t index )
 {
-  return data[ idx ];
+  return data[ index ];
 }
 
 template <size_t h, size_t w, typename dataType>
-const TVector<h, dataType> &TMatrix<h, w, dataType>::operator[]( size_t idx ) const
+const TVector<h, dataType> &TMatrix<h, w, dataType>::operator[]( size_t index ) const
 {
-  return data[ idx ];
+  return data[ index ];
 }
 
 template <size_t fDim, typename fDataType>

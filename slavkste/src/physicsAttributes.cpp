@@ -22,8 +22,7 @@ TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double width,
                                                                 vector<TVector<2>> points )
 {
   if( points.size() < 2 )
-    return { density * M_PI * width * width,
-             M_PI * density * width * width * width * width / 2 };
+    return circleAttributes( density, width );
 
   double mass = 0, segmentMass;
   double angularMass = 0;

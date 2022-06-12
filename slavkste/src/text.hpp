@@ -2,15 +2,29 @@
 
 #include "object.hpp"
 
-
+/**
+ * Text object.
+ */
 class CText : public CObject
 {
 public:
+  /**
+   * Initialises text at position.
+   * @param position
+   * @param text
+   */
   CText( TVector<2> position, std::string text );
 
-  void render( CWindow & ) const override;
+  /**
+   * Renders text to window.
+   * @param window
+   */
+  void render( CWindow &window ) const override;
 
 private:
+  /**
+   * Text.
+   */
   std::string text;
 };
 

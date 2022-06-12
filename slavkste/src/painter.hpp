@@ -6,7 +6,7 @@
 #include "physicsObject.hpp"
 
 /**
- * @class Class responsible for drawing complex objects to screen and ray-casting.
+ * Class responsible for drawing complex objects to screen and ray-casting.
  */
 class CPainter
 {
