@@ -65,10 +65,6 @@ vector<TManifold> CPhysicsEngine::findCollisions( vector<CPhysicsObject *> &obje
       if( collision )
         collisions.push_back( collision );
     }
-  for( auto firstIt = objects.begin(); firstIt != objects.end(); ++firstIt )
-    for( auto secondIt = firstIt + 1; secondIt != objects.end(); ++secondIt )
-    {
-    }
   return collisions;
 }
 

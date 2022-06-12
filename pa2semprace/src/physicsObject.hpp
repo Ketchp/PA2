@@ -30,8 +30,8 @@ public:
 
   virtual CPhysicsObject &rotate( double );
 
-  virtual double rayTrace( const TVector<2> &position,
-                           const TVector<2> &direction ) const;
+  [[nodiscard]] virtual double rayTrace( const TVector<2> &position,
+                                         const TVector<2> &direction ) const;
 
   void resetAccumulator();
 
@@ -48,11 +48,6 @@ public:
 
 namespace collision
 {
-TContactPoint lineLine( const TVector<2> &, const TVector<2> &,
-                        const TVector<2> &, const TVector<2> & );
-
-TContactPoint lineCircle( const TVector<2> &, const TVector<2> &,
-                          const TVector<2> &, double );
 
 TContactPoint circleCircle( const TVector<2> &position, double radius,
                             const TVector<2> &, double );
@@ -70,10 +65,6 @@ TContactPoint firstRectOverlap( const TVector<2> &, const TVector<2> &, double,
 
 TMatrix<2, 4> rectCorners( const TVector<2> &, const TVector<2> &, double );
 
-double separation( const TVector<2> &axis,
-                   const TMatrix<2, 4> &firstPoints,
-                   const TMatrix<2, 4> &secondPoints );
-
 template <size_t dim>
 TContactPoint axisPointsPenetration( const TVector<2> &axisDirection,
                                      const TVector<2> &axisPoint,
@@ -82,8 +73,6 @@ TContactPoint axisPointsPenetration( const TVector<2> &axisDirection,
 TVector<2> lineSegmentClosestPoint( const TVector<2> &,
                                     const TVector<2> &,
                                     const TVector<2> & );
-
-TContactPoint biggestOverlap( CPhysicsObject *, const std::vector<CPhysicsObject *> & );
 
 double rayTraceLineSeg( const TVector<2> &position,
                         const TVector<2> &direction,

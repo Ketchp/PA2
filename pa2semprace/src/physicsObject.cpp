@@ -45,15 +45,6 @@ void CPhysicsObject::applyImpulse( const TVector<2> &impulse, const TVector<2> &
   double offset = 8;
   double scale = 2000;
   m_attributes.integrity -= max( impulse.norm() * m_attributes.invMass - offset, 0. ) / scale;
-
-
-//  if( m_attributes.invMass != 0 )
-//  {
-//    cout << impulse << " at " << point << endl;
-//    cout << "dv = " << m_attributes.invMass * impulse << endl;
-//    cout << "dw = " << lever.dot( crossProduct( impulse ) ) *
-//                       m_attributes.invAngularMass << endl;
-//  }
 }
 
 TVector<2> CPhysicsObject::getLocalVelocity( const TVector<2> &point ) const
@@ -71,52 +62,6 @@ double CPhysicsObject::rayTrace( const TVector<2> &position, const TVector<2> &d
 }
 
 
-
-
-//TContactPoint collision::lineLine( const TVector<2> &aBegin,
-//                                   const TVector<2> &aEnd,
-//                                   const TVector<2> &bBegin,
-//                                   const TVector<2> &bEnd )
-//{
-//  TMatrix<2,2> overlapEquationMatrix{ aEnd - aBegin,
-//                                      bBegin - bEnd };
-//  if( !overlapEquationMatrix.invert() )
-//    return { {}, { NAN, NAN } };
-//  TVector<2> solution = overlapEquationMatrix * ( bBegin - aBegin );
-//  if( solution[ 0 ] <= 0 || solution[ 0 ] >= 1 ||
-//      solution[ 1 ] <= 0 || solution[ 1 ] >= 1 )
-//    return { {}, { NAN, NAN } };
-//  return aBegin + solution[ 0 ] * ( aEnd - aBegin );
-//}
-
-//TContactPoint collision::lineCircle( const TVector<2> &begin, const TVector<2> &end,
-//                                     const TVector<2> &centre, double radius )
-//{
-//  TVector<2> lineVector = end - begin;
-//  double projectionScale = lineVector.dot( centre - begin )
-//                           / lineVector.squareNorm();
-//
-//  // closest point to line that lies in line segment
-//  if( projectionScale > 0 && projectionScale < 1 )
-//  {
-//    TVector<2> normal = ( centre - begin ).rejectedFrom( lineVector );
-//    if( normal.squareNorm() > radius * radius )
-//      return { NAN, NAN };
-//    TVector<2> overlap = normal.stretchedTo( radius ) - normal;
-//    return begin + lineVector * projectionScale + overlap / 2;
-//  }
-//
-//  TVector<2> relativeBegin = begin - centre;
-//  if( relativeBegin.squareNorm() < radius * radius )
-//    return begin;
-//
-//  TVector<2> relativeEnd = end - centre;
-//  if( relativeEnd.squareNorm() < radius * radius )
-//    return end;
-//
-//  return { NAN, NAN };
-//}
-
 TContactPoint collision::circleCircle( const TVector<2> &firstCentre, double firstRadius,
                                        const TVector<2> &secondCentre, double secondRadius )
 {
@@ -124,8 +69,7 @@ TContactPoint collision::circleCircle( const TVector<2> &firstCentre, double fir
   double relativeDist = relativePos.norm();
   double overlapSize = firstRadius + secondRadius - relativeDist;
   if( overlapSize <= 0 )
-    return { {},
-             { NAN, NAN } };
+    return { {}, { NAN, NAN } };
   TVector<2> overlap = relativePos.stretchedTo( overlapSize / 2 );
   return { overlap,
            firstCentre + relativePos.stretchedTo( firstRadius ) - overlap };
@@ -154,8 +98,7 @@ TContactPoint collision::rectCircle( const TVector<2> &position,
 
   double distance = closestPoint.distance( centre );
   if( distance >= radius )
-    return { {},
-             { NAN, NAN } };
+    return { {}, { NAN, NAN } };
 
   TVector<2> overlap = ( centre - closestPoint );
   overlap.stretchTo( ( radius - distance ) / 2 );
@@ -170,8 +113,7 @@ TContactPoint collision::rectRect( const TVector<2> &firstPos,
                                    double secondRot )
 {
   if( firstPos.distance( secondPos ) > firstSize.norm() + secondSize.norm() )
-    return { {},
-             { NAN, NAN } };
+    return { {}, { NAN, NAN } };
   // vector needed to move first
   TContactPoint firstSecond = firstRectOverlap( firstPos, firstSize, firstRot,
                                                 secondPos, secondSize, secondRot );
@@ -215,8 +157,7 @@ TContactPoint collision::firstRectOverlap( const TVector<2> &firstPos,
                                                 firstCorners[ ( idx + 2 ) % 4 ],
                                                 secondCorners );
     if( !temp.overlapVector )
-      return { {},
-               { NAN, NAN } };
+      return { {}, { NAN, NAN } };
     double dist = temp.overlapVector.squareNorm();
     if( dist < smallestOverlap )
     {
@@ -240,36 +181,6 @@ TMatrix<2, 4> collision::rectCorners( const TVector<2> &position,
            position - firstDiagonal, position - secondDiagonal };
 }
 
-double collision::separation( const TVector<2> &axis,
-                              const TMatrix<2, 4> &firstPoints,
-                              const TMatrix<2, 4> &secondPoints )
-{
-  TVector<2> normal = crossProduct( axis );
-  double firstProjectionValues[4] = {
-          normal.dot( firstPoints[ 0 ] ),
-          normal.dot( firstPoints[ 1 ] ),
-          normal.dot( firstPoints[ 2 ] ),
-          normal.dot( firstPoints[ 3 ] ),
-  };
-  double secondProjectionValues[4] = {
-          normal.dot( secondPoints[ 0 ] ),
-          normal.dot( secondPoints[ 1 ] ),
-          normal.dot( secondPoints[ 2 ] ),
-          normal.dot( secondPoints[ 3 ] ),
-  };
-  double firstMin = *min_element( firstProjectionValues,
-                                  firstProjectionValues + 4 );
-  double firstMax = *max_element( firstProjectionValues,
-                                  firstProjectionValues + 4 );
-  double secondMin = *min_element( secondProjectionValues,
-                                   secondProjectionValues + 4 );
-  double secondMax = *max_element( secondProjectionValues,
-                                   secondProjectionValues + 4 );
-
-  return min( secondMin - firstMax,
-              secondMax - firstMin );
-}
-
 template <size_t dim>
 TContactPoint
 collision::axisPointsPenetration( const TVector<2> &axisDirection,
@@ -290,8 +201,7 @@ collision::axisPointsPenetration( const TVector<2> &axisDirection,
   }
 
   if( maxOverlap <= 0 )
-    return { {},
-             { NAN, NAN } };
+    return { {}, { NAN, NAN } };
 
   return { normal.stretchedTo( maxOverlap / 2 ), maxPoint };
 }
@@ -307,26 +217,6 @@ TVector<2> collision::lineSegmentClosestPoint( const TVector<2> &begin,
   if( projectionScale >= 1 )
     return end;
   return begin + direction * projectionScale;
-}
-
-TContactPoint collision::biggestOverlap( CPhysicsObject *target,
-                                         const std::vector<CPhysicsObject *> &objects )
-{
-  TContactPoint res = { {},
-                        { NAN, NAN } };
-  double norm = 0;
-  for( const auto &object: objects )
-  {
-    TManifold collision = target->getManifold( object );
-    for( const auto &contact: collision.contacts )
-    {
-      if( norm >= contact.overlapVector.norm() )
-        continue;
-      norm = contact.overlapVector.norm();
-      res = contact;
-    }
-  }
-  return res;
 }
 
 double collision::rayTraceLineSeg( const TVector<2> &position,

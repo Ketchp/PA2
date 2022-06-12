@@ -9,11 +9,11 @@ using namespace collision;
 CRectangle::CRectangle( TVector<2> centrePoint,
                         TVector<2> size,
                         double rotation, double density )
-        : CPhysicsObject( centrePoint,
-                          TPhysicsAttributes::rectangleAttributes( density,
-                                                                   size ),
-                          rotation ),
-          m_size{ size / 2 }
+  : CPhysicsObject( centrePoint,
+                    TPhysicsAttributes::rectangleAttributes( density,
+                                                             size ),
+                    rotation ),
+    m_size{ size / 2 }
 {
   m_boundingRadius = m_size.norm();
 }
@@ -32,8 +32,6 @@ TManifold CRectangle::getManifold( CRectangle *other )
 {
   TContactPoint contact = rectRect( m_position, m_size, m_rotation,
                                     other->m_position, other->m_size, other->m_rotation );
-  if( !contact.contactPoint )
-    return { nullptr, nullptr };
   return { this, other, contact };
 }
 
@@ -41,10 +39,6 @@ TManifold CRectangle::getManifold( CCircle *circle )
 {
   TContactPoint contact = rectCircle( m_position, m_size, m_rotation,
                                       circle->m_position, circle->m_radius );
-
-  if( !contact.contactPoint )
-    return { nullptr, nullptr };
-
   return { this, circle, contact };
 }
 
@@ -77,25 +71,6 @@ TVector<2> CRectangle::right() const
 TMatrix<2, 4> CRectangle::corners() const
 {
   return rectCorners( m_position, m_size, m_rotation );
-}
-
-TVector<2> CRectangle::rectangleClosestPoint( const TVector<2> &point ) const
-{
-  TMatrix<2, 4> corn = corners();
-  double smallestDist = HUGE_VAL;
-  TVector<2> closest;
-  for( size_t idx = 0; idx < 4; ++idx )
-  {
-    TVector<2> temp = lineSegmentClosestPoint( corn[ idx ],
-                                               corn[ ( idx + 1 ) % 4 ],
-                                               point );
-    double newDist = temp.squareDistance( point );
-    if( newDist >= smallestDist )
-      continue;
-    smallestDist = newDist;
-    closest = temp;
-  }
-  return closest;
 }
 
 double CRectangle::rayTrace( const TVector<2> &position, const TVector<2> &direction ) const

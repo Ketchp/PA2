@@ -7,9 +7,9 @@ using namespace std;
 using namespace collision;
 
 CCircle::CCircle( TVector<2> centre, double size, double density )
-        : CPhysicsObject( centre,
-                          TPhysicsAttributes::circleAttributes( density, size ) ),
-          m_radius( size )
+  : CPhysicsObject( centre,
+                    TPhysicsAttributes::circleAttributes( density, size ) ),
+    m_radius( size )
 {
   m_boundingRadius = size;
 }
@@ -33,8 +33,6 @@ TManifold CCircle::getManifold( CCircle *other )
 {
   TContactPoint contact = circleCircle( m_position, m_radius,
                                         other->m_position, other->m_radius );
-  if( !contact.contactPoint )
-    return { nullptr, nullptr };
   return { this, other, contact };
 }
 

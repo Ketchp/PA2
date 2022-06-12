@@ -88,8 +88,6 @@ TManifold CComplexObject::getManifold( CRectangle *rect )
     contacts.push_back( contact );
   }
 
-  if( contacts.empty() )
-    return { nullptr, nullptr };
   return { rect, this, contacts };
 }
 
@@ -97,8 +95,6 @@ TManifold CComplexObject::getManifold( CCircle *circle )
 {
   auto contacts = getCircleCollision( circle->m_position, circle->m_radius );
 
-  if( contacts.empty() )
-    return { nullptr, nullptr };
   return { circle, this, contacts };
 }
 
@@ -132,8 +128,7 @@ TManifold CComplexObject::getManifold( CComplexObject *other )
                                             other->m_width );
     contacts.insert( contacts.end(), startContact.begin(), startContact.end() );
   }
-  if( contacts.empty() )
-    return { nullptr, nullptr };
+
   return { other, this, contacts };
 }
 
@@ -168,7 +163,7 @@ CPhysicsObject &CComplexObject::rotate( double angle )
 void CComplexObject::addVertex( const TVector<2> &point )
 {
   TVector<2> newPoint = point - m_position;
-  if( m_vertices.size() )
+  if( !m_vertices.empty() )
   {
     double length = newPoint.distance( m_vertices.back() );
     if( length > m_longest )

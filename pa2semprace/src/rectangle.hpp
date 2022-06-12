@@ -22,10 +22,8 @@ public:
 
   TManifold getManifold( CComplexObject * ) override;
 
-  TVector<2> rectangleClosestPoint( const TVector<2> & ) const;
-
-  double rayTrace( const TVector<2> &position,
-                   const TVector<2> &direction ) const override;
+  [[nodiscard]] double rayTrace( const TVector<2> &position,
+                                 const TVector<2> &direction ) const override;
 
   static double rayTrace( const TVector<2> &position,
                           const TVector<2> &direction,
