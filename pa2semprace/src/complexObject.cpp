@@ -95,45 +95,7 @@ TManifold CComplexObject::getManifold( CRectangle *rect )
 
 TManifold CComplexObject::getManifold( CCircle *circle )
 {
-  if( m_vertices.empty() )
-    return { nullptr, nullptr };
-
-  vector<TContactPoint> contacts;
-  vector<size_t> collidingFaces;
-  for( size_t idx = 1; idx < m_vertices.size(); ++idx )
-  {
-    const auto &begin = m_vertices[ idx - 1 ];
-    const auto &end = m_vertices[ idx ];
-    const auto direction = end - begin;
-    TContactPoint contact = rectCircle( m_position + ( begin + end ) / 2,
-                                        { direction.norm() / 2, m_width },
-                                        direction.getAngle(),
-                                        circle->m_position,
-                                        circle->m_radius );
-    if( !contact.contactPoint )
-      continue;
-    contact.overlapVector *= -1;
-    contacts.push_back( contact );
-    collidingFaces.push_back( idx - 1 );
-  }
-
-  auto faceIt = collidingFaces.begin();
-  for( size_t idx = 0; idx < m_vertices.size(); ++idx )
-  {
-    if( faceIt != collidingFaces.end() && ( *faceIt == idx || *faceIt == idx ) )
-    {
-      idx = *faceIt + 1;
-      ++faceIt;
-      continue;
-    }
-    TContactPoint contact = circleCircle( circle->m_position,
-                                          circle->m_radius,
-                                          m_vertices[ idx ] + m_position,
-                                          m_width );
-    if( !contact.contactPoint )
-      continue;
-    contacts.push_back( contact );
-  }
+  auto contacts = getCircleCollision( circle->m_position, circle->m_radius );
 
   if( contacts.empty() )
     return { nullptr, nullptr };
@@ -161,7 +123,15 @@ TManifold CComplexObject::getManifold( CComplexObject *other )
     contacts.insert( contacts.end(), newContacts.begin(), newContacts.end() );
   }
 
-
+  auto endContact = getCircleCollision( other->m_position + other->m_vertices.front(),
+                                          other->m_width );
+  contacts.insert( contacts.end(), endContact.begin(), endContact.end() );
+  if( other->m_vertices.size() > 1 )
+  {
+    auto startContact = getCircleCollision( other->m_position + other->m_vertices.back(),
+                                            other->m_width );
+    contacts.insert( contacts.end(), startContact.begin(), startContact.end() );
+  }
   if( contacts.empty() )
     return { nullptr, nullptr };
   return { other, this, contacts };
@@ -258,5 +228,50 @@ void CComplexObject::spawn( double density )
 
   m_attributes = TPhysicsAttributes::complexObjectAttributes( m_width, density,
                                                               m_vertices );
+}
+
+std::vector<TContactPoint> CComplexObject::getCircleCollision( const TVector<2> &centre, double radius ) const
+{
+  if( m_vertices.empty() )
+    return {};
+
+  vector<TContactPoint> contacts;
+  vector<size_t> collidingFaces;
+  for( size_t idx = 1; idx < m_vertices.size(); ++idx )
+  {
+    const auto &begin = m_vertices[ idx - 1 ];
+    const auto &end = m_vertices[ idx ];
+    const auto direction = end - begin;
+    TContactPoint contact = rectCircle( m_position + ( begin + end ) / 2,
+                                        { direction.norm() / 2, m_width },
+                                        direction.getAngle(),
+                                        centre,
+                                        radius );
+    if( !contact.contactPoint )
+      continue;
+    contact.overlapVector *= -1;
+    contacts.push_back( contact );
+    collidingFaces.push_back( idx - 1 );
+  }
+
+  auto faceIt = collidingFaces.begin();
+  for( size_t idx = 0; idx < m_vertices.size(); ++idx )
+  {
+    if( faceIt != collidingFaces.end() && ( *faceIt == idx || *faceIt == idx ) )
+    {
+      idx = *faceIt + 1;
+      ++faceIt;
+      continue;
+    }
+    TContactPoint contact = circleCircle( centre,
+                                          radius,
+                                          m_vertices[ idx ] + m_position,
+                                          m_width );
+    if( !contact.contactPoint )
+      continue;
+    contacts.push_back( contact );
+  }
+
+  return contacts;
 }
 

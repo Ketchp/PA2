@@ -20,6 +20,9 @@ public:
 
   TManifold getManifold( CComplexObject * ) override;
 
+  std::vector<TContactPoint> getCircleCollision( const TVector<2> &centre,
+                                                 double radius ) const;
+
   std::vector<TContactPoint> getNodeCollisions( CComplexObject *,
                                                 const TVector<2> &node ) const;
 
