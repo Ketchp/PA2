@@ -17,6 +17,10 @@ class CGame
 {
 public:
   CGame( int *argcPtr, char *argv[] );
+  CGame( const CGame & ) = delete;
+  CGame( CGame && ) = delete;
+  CGame &operator=( const CGame & ) = delete;
+  CGame &operator=( CGame && ) = delete;
 
   ~CGame();
 
@@ -43,10 +47,14 @@ private:
 
   static bool checkCollision( const TManifold & );
 
-  bool checkPlayerHealth() const;
+  static long getMilliseconds();
+
+  void setTimer();
+
+  [[nodiscard]] bool checkPlayerHealth() const;
 
   bool m_paused = true;
-  bool m_finished = false;
+  bool pressed = false;
   const double frameLength = 40; //ms
   long lastFrame = 0;
 
@@ -57,4 +65,3 @@ private:
   CPainter m_painter;
   CLevelLoader m_levelLoader;
 };
-

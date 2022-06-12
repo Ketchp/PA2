@@ -151,8 +151,6 @@ TVector<2> CPhysicsEngine::getFrictionImpulse( CPhysicsObject &first,
 
   double frictionCoefficient = firstAttr.frictionCoefficient * secondAttr.frictionCoefficient;
 
-  // todo limit friction
-
   return ( 1 + frictionCoefficient ) *
          collisionTangent.dot( relativeVelocity ) *
          getCombinedInvMass( first, second, collisionPoint, collisionTangent ) *
@@ -184,14 +182,9 @@ double CPhysicsEngine::getObjectInvMass( const CPhysicsObject &object,
                                          const TVector<2> &direction )
 {
   double linearInvMass = object.m_attributes.invMass;
-  TVector<3> lever = TVector<3>::changeDim( point - object.m_position );
-  TVector<3> projection = TVector<3>::changeDim( direction );
+  TVector<2> lever = point - object.m_position;
 
-  double angMass = crossProduct(
-          crossProduct(
-                  lever,
-                  projection ),
-          lever ).dot( projection ) * object.m_attributes.invAngularMass;
+  double angMass = pow( lever.dot( crossProduct( direction ) ), 2 ) * object.m_attributes.invAngularMass;
 
   return linearInvMass + angMass;
 }
@@ -218,20 +211,12 @@ void CPhysicsEngine::resolveCollision( const TManifold &collision )
 
 void CPhysicsEngine::resolveCollision( CPhysicsObject &first,
                                        CPhysicsObject &second,
-                                       TVector<2> overlapVector )
+                                       const TVector<2> &overlapVector )
 {
-//  TVector<2> relativeVelocity = getRelativeVelocity( first, second, contact.contactPoint );
-//  TVector<2> collisionNormal = contact.overlapVector;
-//  if( collisionNormal.dot( relativeVelocity ) >= 0 )
-//    return;
-
   double linearInvMass = 1 / ( first.m_attributes.invMass +
                                second.m_attributes.invMass );
   if( !isnormal( linearInvMass ) )
     return;
   first.m_position -= overlapVector * linearInvMass * first.m_attributes.invMass;
   second.m_position += overlapVector * linearInvMass * second.m_attributes.invMass;
-
 }
-
-

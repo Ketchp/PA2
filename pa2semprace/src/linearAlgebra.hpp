@@ -44,20 +44,10 @@ inline TMatrix<h, w, dataType> operator/( TMatrix<h, w, dataType> mat, dataType 
 
 bool equalDoubles( double a, double b, double precision = 100 );
 
-template <size_t dim, typename dataType>
-TVector<dim, dataType> crossProduct( std::initializer_list<TVector<dim, dataType>> args );
-
 template <typename dataType>
 inline TVector<2, dataType> crossProduct( const TVector<2, dataType> &first )
 {
-  return crossProduct( { first } );
-}
-
-template <typename dataType>
-inline TVector<3, dataType> crossProduct( const TVector<3, dataType> &first,
-                                          const TVector<3, dataType> &second )
-{
-  return crossProduct( { first, second } );
+  return { -first[ 1 ], first[ 0 ] };
 }
 
 template <size_t dim, typename dataType>
@@ -93,7 +83,7 @@ struct TVector
 
   inline TVector<dim, dataType> &normalize();
 
-  inline TVector<dim, dataType> normalized() const;
+  [[nodiscard]] inline TVector<dim, dataType> normalized() const;
 
   inline dataType &operator[]( size_t );
 
@@ -108,8 +98,6 @@ struct TVector
   [[nodiscard]] inline dataType distance( const TVector<dim, dataType> & ) const;
 
   [[nodiscard]] inline dataType squareDistance( const TVector<dim, dataType> & ) const;
-
-  [[nodiscard]] inline bool isZero() const;
 
   [[nodiscard]] inline dataType dot( const TVector<dim, dataType> & ) const;
 
@@ -129,17 +117,11 @@ struct TVector
 
   [[nodiscard]] inline TVector<dim, dataType> stretchedTo( dataType ) const;
 
-  template <size_t inDim>
-  inline static TVector<dim, dataType> changeDim( const TVector<inDim, dataType> &input );
-
   inline static TVector<dim, dataType> canonical( size_t n );
 
   inline static TVector<dim, dataType> canonical( size_t n, dataType size );
 
-  inline static size_t dimension(){ return dim; };
-
-  double getAngle() const;
-
+  [[nodiscard]] double getAngle() const;
 };
 
 
@@ -160,9 +142,7 @@ struct TMatrix
 
   [[nodiscard]] inline dataType det() const;
 
-  bool invert();
-
-  //math::TVector<dim> solveFor( math::TVector<dim> ) const;
+  [[nodiscard]] bool invert();
 };
 
 
@@ -277,12 +257,6 @@ dataType TVector<dim, dataType>::squareDistance( const TVector<dim, dataType> &o
 }
 
 template <size_t dim, typename dataType>
-bool TVector<dim, dataType>::isZero() const
-{
-  return std::all_of( data.begin(), data.end(), []( const dataType &elem ){ return elem == dataType( 0 ); } );
-}
-
-template <size_t dim, typename dataType>
 dataType TVector<dim, dataType>::dot( const TVector<dim, dataType> &other ) const
 {
   dataType temp( 0 );
@@ -327,16 +301,6 @@ template <size_t dim, typename dataType>
 TVector<dim, dataType> TVector<dim, dataType>::stretchedTo( dataType length ) const
 {
   return *this * length / norm();
-}
-
-template <size_t dim, typename dataType>
-template <size_t inDim>
-TVector<dim, dataType> TVector<dim, dataType>::changeDim( const TVector<inDim, dataType> &input )
-{
-  TVector<dim, dataType> out;
-  for( size_t idx = 0; idx < std::min( dim, inDim ); ++idx )
-    out[ idx ] = input[ idx ];
-  return out;
 }
 
 template <size_t dim, typename dataType>

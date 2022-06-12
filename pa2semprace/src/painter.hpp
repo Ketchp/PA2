@@ -13,6 +13,7 @@ public:
 
   void addPoint( int, int, std::vector<CPhysicsObject *> & );
 
+  void stop();
   void stop( int, int, std::vector<CPhysicsObject *> & );
 
   TVector<2> lastMousePosition{ NAN, NAN };
@@ -25,7 +26,7 @@ public:
 private:
   void start( int, int, std::vector<CPhysicsObject *> & );
 
-  bool addPoint( TVector<2>, std::vector<CPhysicsObject *> & );
+  bool addPoint( const TVector<2> &, std::vector<CPhysicsObject *> & );
 
   CComplexObject *currentlyDrawn = nullptr;
   std::function<void()> redrawCallback;

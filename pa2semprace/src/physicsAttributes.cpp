@@ -42,5 +42,5 @@ TPhysicsAttributes TPhysicsAttributes::complexObjectAttributes( double width,
 TPhysicsAttributes::TPhysicsAttributes( double mass, double angularMass )
         : mass( mass ),
           invMass( 1 / mass ),
-          angularMass( angularMass ),
-          invAngularMass( 1 / angularMass ){}
+          angularMass( angularMass / 2 ),
+          invAngularMass( 2 / angularMass ){}

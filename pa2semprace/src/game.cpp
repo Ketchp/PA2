@@ -14,14 +14,7 @@ CGame::CGame( int *argcPtr, char *argv[] )
                          m_painter,
                          "assets/tutorial_1.json" )
 {
-  try
-  {
-    m_levelLoader.loadLevel();
-  }
-  catch( const invalid_argument &e )
-  {
-    throw e;
-  }
+  m_levelLoader.loadLevel();
 
   m_window.registerDrawEvent( this, &CGame::redraw );
   m_window.registerKeyEvent( this, &CGame::keyPress );
@@ -39,35 +32,32 @@ CGame::~CGame()
 
 void CGame::nextFrame()
 {
-  if( !m_paused )
+  if( m_paused )
   {
-    vector<TManifold> collisions = m_engine.step( m_objects, frameLength / 1000 );
-    if( checkPlayerHealth() )
-    {
-      m_levelLoader.loadLevel( EActionType::resetLevel );
-      pause();
-    }
-    else if( checkCollisions( collisions ) )
-    {
-      m_levelLoader.loadLevel( EActionType::nextLevel );
-      pause();
-    }
-    auto currentTime =
-            chrono::duration_cast<chrono::milliseconds>( chrono::system_clock::now().time_since_epoch() ).count();
-    long timeDiff = currentTime - lastFrame;
-    lastFrame = currentTime;
-
-    long sleepTime = (long)frameLength - timeDiff;
-    m_window.registerTimerEvent( this, &CGame::nextFrame, max( sleepTime, 0l ) );
+    redraw();
+    return;
   }
+
+  vector<TManifold> collisions = m_engine.step( m_objects, frameLength / 1000 );
+  if( checkPlayerHealth() )
+  {
+    m_levelLoader.loadLevel( EActionType::resetLevel );
+    pause();
+  }
+  else if( checkCollisions( collisions ) )
+  {
+    m_levelLoader.loadLevel( EActionType::nextLevel );
+    pause();
+  }
+  setTimer();
   redraw();
 }
 
 void CGame::start()
 {
-  lastFrame = chrono::duration_cast<chrono::milliseconds>( chrono::system_clock::now().time_since_epoch() ).count();
   m_paused = false;
-  m_window.registerTimerEvent( this, &CGame::nextFrame, 0 );
+  m_painter.stop();
+  setTimer();
 }
 
 void CGame::pause()
@@ -132,6 +122,7 @@ void CGame::keyPress( unsigned char key, int x, int y )
   {
     m_levelLoader.loadLevel( EActionType::resetLevel );
     pause();
+    pressed = false;
   }
 }
 
@@ -143,18 +134,21 @@ void CGame::clickHandler( int button, int state, int x, int y )
     {
       m_painter.addPoint( x, y, m_objects );
       pause();
+      pressed = true;
     }
-    else if( state == GLUT_UP )
+    else if( state == GLUT_UP && pressed )
     {
       m_painter.stop( x, y, m_objects );
       start();
+      pressed = false;
     }
   }
 }
 
 void CGame::moveHandler( int x, int y )
 {
-  m_painter.addPoint( x, y, m_objects );
+  if( pressed )
+    m_painter.addPoint( x, y, m_objects );
 }
 
 bool CGame::checkCollisions( const vector<TManifold> &collisions )
@@ -181,4 +175,19 @@ bool CGame::checkPlayerHealth() const
                    return obj->m_tag & ETag::PLAYER &&
                           obj->m_attributes.integrity <= 0;
                  } );
+}
+
+long CGame::getMilliseconds()
+{
+  return chrono::duration_cast<chrono::milliseconds>( chrono::system_clock::now().time_since_epoch() ).count();
+}
+
+void CGame::setTimer()
+{
+  auto currentTime = getMilliseconds();
+  long timeDiff = currentTime - lastFrame;
+  lastFrame = currentTime;
+
+  long sleepTime = (long)frameLength - timeDiff;
+  m_window.registerTimerEvent( this, &CGame::nextFrame, max( sleepTime, 0l ) );
 }

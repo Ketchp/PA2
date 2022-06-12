@@ -34,7 +34,7 @@ private:
   static void resolveCollision( const TManifold & );
 
   static void resolveCollision( CPhysicsObject &, CPhysicsObject &,
-                                TVector<2> );
+                                const TVector<2> & );
 
   static void applyImpulses( std::vector<TManifold> & );
 

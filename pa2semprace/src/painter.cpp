@@ -9,7 +9,8 @@ const double CPainter::minDrawLength = 30;
 
 
 CPainter::CPainter( std::function<void()> callback )
-        : redrawCallback( move( callback ) ){}
+  : redrawCallback( move( callback ) )
+{}
 
 void CPainter::start( int x, int y, vector<CPhysicsObject *> &objects )
 {
@@ -78,6 +79,13 @@ void CPainter::stop( int x, int y, std::vector<CPhysicsObject *> &objects )
     return;
   if( lastMousePosition.distance( { (double)x, (double)y } ) > minDrawLength / 2 )
     addPoint( x, y, objects );
+  stop();
+}
+
+void CPainter::stop()
+{
+  if( !currentlyDrawn )
+    return;
   currentlyDrawn->spawn( density );
   reset();
 }
@@ -88,7 +96,7 @@ void CPainter::reset()
   currentlyDrawn = nullptr;
 }
 
-bool CPainter::addPoint( TVector<2> direction, std::vector<CPhysicsObject *> &objects )
+bool CPainter::addPoint( const TVector<2> &direction, std::vector<CPhysicsObject *> &objects )
 {
   TVector<2> normal = crossProduct( direction ).stretchedTo( drawWidth * 0.8 );
 

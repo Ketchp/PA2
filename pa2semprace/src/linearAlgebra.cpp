@@ -9,24 +9,6 @@ bool equalDoubles( double a, double b, double precision )
 }
 
 template <>
-TVector<3> crossProduct( std::initializer_list<TVector<3>> args )
-{
-  auto it = args.begin();
-  TVector<3> a = *it;
-  TVector<3> b = *++it;
-  return { a[ 1 ] * b[ 2 ] - a[ 2 ] * b[ 1 ],
-           a[ 2 ] * b[ 0 ] - a[ 0 ] * b[ 2 ],
-           a[ 0 ] * b[ 1 ] - a[ 1 ] * b[ 0 ] };
-}
-
-template <>
-TVector<2> crossProduct( std::initializer_list<TVector<2>> args )
-{
-  TVector<2> a = *args.begin();
-  return { -a[ 1 ], a[ 0 ] };
-}
-
-template <>
 TVector<2, double> TVector<2, double>::rotated( double angle ) const
 {
   return TMatrix<2, 2, double>::rotationMatrix2D( angle ) * *this;

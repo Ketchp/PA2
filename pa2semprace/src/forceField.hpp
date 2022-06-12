@@ -14,4 +14,3 @@ public:
 
   std::function<void( CPhysicsObject & )> m_fieldFunctor;
 };
-

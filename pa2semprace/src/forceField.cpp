@@ -4,7 +4,8 @@
 using namespace std;
 
 CForceField::CForceField( function<void( CPhysicsObject & )> functor )
-        : m_fieldFunctor( move( functor ) ){}
+  : m_fieldFunctor( move( functor ) )
+{}
 
 void CForceField::applyForce( CPhysicsObject &obj ) const
 {

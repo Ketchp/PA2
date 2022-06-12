@@ -13,7 +13,7 @@ CWindow::CWindow( int *argcPtr, char *argv[] )
   glutInitDisplayMode( GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA );
   glutInitWindowPosition( 50, 50 );
   glutInitWindowSize( 800, 640 );
-  m_windowID = glutCreateWindow( "Lighthouse3D - GLUT Tutorial" );
+  glutCreateWindow( "Lighthouse3D - GLUT Tutorial" );
   glutSetKeyRepeat( GLUT_KEY_REPEAT_OFF );
   glutIgnoreKeyRepeat( 1 );
 
@@ -52,21 +52,6 @@ void CWindow::keyPressEventHandler( unsigned char key, int x, int y )
   instance->keyPressEventCallback( key, x, y );
 }
 
-void CWindow::keyReleaseEventHandler( unsigned char key, int x, int y )
-{
-  instance->keyReleaseEventCallback( key, x, y );
-}
-
-void CWindow::specialKeyPressEventHandler( int key, int x, int y )
-{
-  instance->specialKeyPressEventCallback( key, x, y );
-}
-
-void CWindow::specialKeyReleaseEventHandler( int key, int x, int y )
-{
-  instance->specialKeyReleaseEventCallback( key, x, y );
-}
-
 void CWindow::mouseButtonEventHandler( int button, int state, int x, int y )
 {
   instance->mouseButtonEventCallback( button, state, x, y );
@@ -75,11 +60,6 @@ void CWindow::mouseButtonEventHandler( int button, int state, int x, int y )
 void CWindow::mouseMotionEventHandler( int x, int y )
 {
   instance->mouseMotionEventCallback( x, y );
-}
-
-void CWindow::windowCloseEventHandler()
-{
-  instance->windowCloseEventCallback();
 }
 
 
@@ -93,13 +73,6 @@ void CWindow::resizeWindowAction( int w, int h )
   double heightScale = h / viewHeight;
 
   m_scale = std::min( widthScale, heightScale );
-
-  // Prevent a divide by zero, when window is too short
-  // (you can't make a window of zero width).
-//  if( h == 0 )
-//    h = 1;
-//
-//  float ratio = (float)w / (float)h;
 
   // Use the Projection Matrix
   glMatrixMode( GL_PROJECTION );
@@ -161,8 +134,9 @@ TVector<2> CWindow::getViewSize() const
 }
 
 
-void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint,
-                        double width, ETag tags )
+void CWindow::drawLine( const TVector<2> &startPoint,
+                        const TVector<2> &endPoint,
+                        double width, ETag tags ) const
 {
   applyPenColor( tags );
   TVector<2> normal = crossProduct( endPoint - startPoint ).stretchedTo( width );
@@ -176,7 +150,7 @@ void CWindow::drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint
   restorePenColor( tags );
 }
 
-void CWindow::drawCircle( const TVector<2> &centre, double radius, double angle, ETag tags )
+void CWindow::drawCircle( const TVector<2> &centre, double radius, double angle, ETag tags ) const
 {
   if( !isnan( angle ) )
   {
@@ -218,7 +192,7 @@ void CWindow::drawCircle( const TVector<2> &centre, double radius, double angle,
 
 CWindow *CWindow::instance = nullptr;
 
-void CWindow::drawText( const TVector<2> &position, const string &text )
+void CWindow::drawText( const TVector<2> &position, const string &text ) const
 {
   applyPenColor( NONE );
   auto x = position[ 0 ],
@@ -296,9 +270,4 @@ void CWindow::restorePenColor( ETag tags )
   if( tags & ETag::NON_SOLID )
     glTranslatef( 0, 0, 0.2 );
 
-}
-
-size_t CWindow::queueSize() const
-{
-  return timerEventCallbacks.size();
 }

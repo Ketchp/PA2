@@ -24,7 +24,7 @@ struct TPhysicsAttributes
   double invAngularMass;
   TVector<2> forceAccumulator;
   double momentAccumulator = 0;
-  double elasticity = 0.85;
+  double elasticity = 0.8;
   double frictionCoefficient = 0.5;
   double integrity = 1;
 };

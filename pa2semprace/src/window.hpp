@@ -30,58 +30,41 @@ public:
   unsigned int registerKeyEvent( type *cl, void(type::*callback)( unsigned char, int, int ) );
 
   template <typename type>
-  unsigned int registerKeyUpEvent( type *cl, void(type::*callback)( unsigned char, int, int ) );
-
-  template <typename type>
-  unsigned int registerSpecialKeyEvent( type *cl, void(type::*callback)( int, int, int ) );
-
-  template <typename type>
-  unsigned int registerSpecialKeyUpEvent( type *cl, void(type::*callback)( int, int, int ) );
-
-  template <typename type>
   unsigned int registerMouseButtonEvent( type *cl, void(type::*callback)( int, int, int, int ) );
 
   template <typename type>
   unsigned int registerMotionButtonEvent( type *cl, void(type::*callback)( int, int ) );
 
-  template <typename type>
-  unsigned int registerWindowCloseEvent( type *cl, void(type::*callback)() );
-
-  void drawLine( const TVector<2> &startPoint, const TVector<2> &endPoint,
-                 double, ETag = ETag::NONE );
+  void drawLine( const TVector<2> &startPoint,
+                 const TVector<2> &endPoint,
+                 double, ETag = ETag::NONE ) const;
 
   void drawCircle( const TVector<2> &centre,
                    double radius,
                    double angle = NAN,
-                   ETag = ETag::NONE );
+                   ETag = ETag::NONE ) const;
 
-  void drawText( const TVector<2> &position, const std::string &text );
+  void drawText( const TVector<2> &position, const std::string &text ) const;
 
-  void applyPenColor( ETag );
+  static void applyPenColor( ETag );
 
-  void restorePenColor( ETag );
+  static void restorePenColor( ETag );
 
 
-  void resizeView( double left,
-                   double right,
-                   double bottom,
-                   double top );
+  void resizeView( double left, double right,
+                   double bottom, double top );
 
   void changeTitle( const std::string & );
 
-  TVector<2> getViewSize() const;
+  [[nodiscard]] TVector<2> getViewSize() const;
 
   void mainLoop() const;
-
-  int m_windowID;
-
-  size_t queueSize() const;
 
 private:
   TVector<2> m_viewOrigin;
   TVector<2> m_viewExtreme;
   TVector<2> m_windowSize;
-  double m_scale;
+  double m_scale = 1;
 
   static void redrawEventHandler();
 
@@ -91,31 +74,19 @@ private:
 
   static void keyPressEventHandler( unsigned char, int, int );
 
-  static void keyReleaseEventHandler( unsigned char, int, int );
-
-  static void specialKeyPressEventHandler( int, int, int );
-
-  static void specialKeyReleaseEventHandler( int, int, int );
-
   static void mouseButtonEventHandler( int, int, int, int );
 
   static void mouseMotionEventHandler( int, int );
 
-  static void windowCloseEventHandler();
-
   void resizeWindowAction( int w, int h );
 
-  TVector<2> resolveCoordinates( int x, int y ) const;
+  [[nodiscard]] TVector<2> resolveCoordinates( int x, int y ) const;
 
   std::function<void()> redrawEventCallback;
   std::map<int, std::function<void()>> timerEventCallbacks;
   std::function<void( unsigned char, int, int )> keyPressEventCallback;
-  std::function<void( unsigned char, int, int )> keyReleaseEventCallback;
-  std::function<void( int, int, int )> specialKeyPressEventCallback;
-  std::function<void( int, int, int )> specialKeyReleaseEventCallback;
   std::function<void( int, int, int, int )> mouseButtonEventCallback;
   std::function<void( int, int )> mouseMotionEventCallback;
-  std::function<void()> windowCloseEventCallback;
 };
 
 
@@ -156,45 +127,6 @@ CWindow::registerKeyEvent( type *cl, void(type::*callback)( unsigned char, int, 
 
 template <typename type>
 unsigned int
-CWindow::registerKeyUpEvent( type *cl, void(type::*callback)( unsigned char, int, int ) )
-{
-  keyReleaseEventCallback = [ cl, callback, this ]( unsigned char key, int x, int y )
-  {
-    TVector<2> relativeCoord = resolveCoordinates( x, y );
-    ( cl->*callback )( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
-  };
-  glutKeyboardUpFunc( &CWindow::keyReleaseEventHandler );
-  return 0;
-}
-
-template <typename type>
-unsigned int
-CWindow::registerSpecialKeyEvent( type *cl, void(type::*callback)( int, int, int ) )
-{
-  specialKeyPressEventCallback = [ cl, callback, this ]( int key, int x, int y )
-  {
-    TVector<2> relativeCoord = resolveCoordinates( x, y );
-    ( cl->*callback )( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
-  };
-  glutSpecialFunc( &CWindow::specialKeyPressEventHandler );
-  return 0;
-}
-
-template <typename type>
-unsigned int
-CWindow::registerSpecialKeyUpEvent( type *cl, void(type::*callback)( int, int, int ) )
-{
-  specialKeyReleaseEventCallback = [ cl, callback, this ]( int key, int x, int y )
-  {
-    TVector<2> relativeCoord = resolveCoordinates( x, y );
-    ( cl->*callback )( key, relativeCoord[ 0 ], relativeCoord[ 1 ] );
-  };
-  glutSpecialUpFunc( &CWindow::specialKeyReleaseEventHandler );
-  return 0;
-}
-
-template <typename type>
-unsigned int
 CWindow::registerMouseButtonEvent( type *cl, void(type::*callback)( int, int, int, int ) )
 {
   mouseButtonEventCallback = [ cl, callback, this ]( int button, int state, int x, int y )
@@ -216,14 +148,5 @@ CWindow::registerMotionButtonEvent( type *cl, void(type::*callback)( int, int ) 
     ( cl->*callback )( relativeCoord[ 0 ], relativeCoord[ 1 ] );
   };
   glutMotionFunc( &CWindow::mouseMotionEventHandler );
-  return 0;
-}
-
-template <typename type>
-unsigned int
-CWindow::registerWindowCloseEvent( type *cl, void(type::*callback)() )
-{
-  windowCloseEventCallback = [ cl, callback ](){ ( cl->*callback )(); };
-  glutCloseFunc( &CWindow::windowCloseEventHandler );
   return 0;
 }
