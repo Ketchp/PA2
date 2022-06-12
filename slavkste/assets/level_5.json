@@ -1,0 +1,26 @@
+{
+  "scene":
+  {
+    "title": "Level V",
+    "size": [ 1000, 800 ],
+    "fields": [ "gravity" ],
+    "pen":
+    {
+      "width": 10,
+      "density": 250
+    },
+    "next": "assets/game_won.json"
+  },
+  "items":
+  [
+    { "type": "rectangle", "position": [ 515, 155 ], "size": [ 600,  30 ], "physics": { "density": 50 }, "tag": "player" },
+    { "type": "rectangle", "position": [ 835,  25 ], "size": [ 300,  20 ], "tag": "target" },
+    { "type": "rectangle", "position": [ 540,  10 ], "size": [ 890,  10 ] },
+    { "type": "rectangle", "position": [ 990, 400 ], "size": [  10, 790 ] },
+    { "type": "rectangle", "position": [ 540, 790 ], "size": [ 900,  10 ] },
+    { "type": "rectangle", "position": [  90, 400 ], "size": [  10, 790 ] },
+    { "type": "rectangle", "position": [ 515,  75 ], "size": [  10, 120 ] },
+
+    { "type": "rectangle", "position": [ 750, 400 ], "size": [ 470, 790 ], "tag": "non solid" }
+  ]
+}

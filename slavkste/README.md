@@ -14,6 +14,7 @@ create documentation with `make doc`
 - Player health is shown on left of the screen
 - Player looses health by **colliding** with objects
 - You also get **penalized** for drawing to much
+- You **can't** draw over **blue** areas.
 
 ### Controls
 - draw simply by dragging mouse
