@@ -50,6 +50,12 @@ void CLevelLoader::loadLevel( EActionType action )
     if( levelDescription.count( "items" ) )
       loadItems( levelDescription[ "items" ].getArray() );
 
+    if( m_objects.empty() )
+      throw invalid_argument( "Level must contain some objects.\n" );
+
+    for( auto &obj: m_objects )
+      if( obj->m_tag & ETag::PLAYER )
+        swap( obj, m_objects[0] );
   }
   catch( invalid_argument &e )
   {

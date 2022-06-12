@@ -55,6 +55,8 @@ private:
 
   [[nodiscard]] bool playerOnScreen();
 
+  void drawPenalty( double );
+
   bool m_paused = true;
   bool pressed = false;
   const double frameLength = 40; //ms

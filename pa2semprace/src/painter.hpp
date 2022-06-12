@@ -11,10 +11,10 @@ class CPainter
 public:
   explicit CPainter( std::function<void()> );
 
-  void addPoint( int, int, std::vector<CPhysicsObject *> & );
+  double addPoint( int, int, std::vector<CPhysicsObject *> & );
 
   void stop();
-  void stop( int, int, std::vector<CPhysicsObject *> & );
+  double stop( int, int, std::vector<CPhysicsObject *> & );
 
   TVector<2> lastMousePosition{ NAN, NAN };
   static const double minDrawLength;
@@ -24,9 +24,9 @@ public:
   void reset();
 
 private:
-  void start( int, int, std::vector<CPhysicsObject *> & );
+  double start( int, int, std::vector<CPhysicsObject *> & );
 
-  bool addPoint( const TVector<2> &, std::vector<CPhysicsObject *> & );
+  double addPoint( const TVector<2> &, std::vector<CPhysicsObject *> & );
 
   CComplexObject *currentlyDrawn = nullptr;
   std::function<void()> redrawCallback;

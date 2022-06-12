@@ -22,6 +22,7 @@
     { "type": "rectangle", "position": [ 400, 400 ], "size": [ 620,  10 ] },
 
     { "type": "text", "position": [ 540, 600 ], "text": "Red bar on the left is your live-bar." },
-    { "type": "text", "position": [ 540, 540 ], "text": "You loose your live by colliding or falling from height." }
+    { "type": "text", "position": [ 540, 540 ], "text": "You loose lives by colliding or falling from height." },
+    { "type": "text", "position": [ 540, 500 ], "text": "Drawing also kills you slowly." }
   ]
 }

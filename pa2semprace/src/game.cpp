@@ -91,25 +91,24 @@ void CGame::redraw()
 
 void CGame::drawHealthBar()
 {
-  for( const auto &obj: m_objects )
-  {
-    if( !( obj->m_tag & ETag::PLAYER ) )
-      continue;
+  auto &player = *m_objects[ 0 ];
 
-    TVector<2> screenSize = m_window.getViewSize();
+  if( !( player.m_tag & ETag::PLAYER ) )
+    return;
 
-    TVector<2> barBottom = { screenSize[ 0 ] * 0.04, screenSize[ 1 ] * 0.05 };
-    TVector<2> fullBar = screenSize * 0.85;
-    fullBar[ 0 ] = 0;
+  TVector<2> screenSize = m_window.getViewSize();
 
-    m_window.drawLine( barBottom,
-                       barBottom + fullBar * obj->m_attributes.integrity,
-                       20, ETag::HEALTH );
+  TVector<2> barBottom = { screenSize[ 0 ] * 0.04, screenSize[ 1 ] * 0.05 };
+  TVector<2> fullBar = screenSize * 0.85;
+  fullBar[ 0 ] = 0;
 
-    string health = to_string( (int)( 100 * obj->m_attributes.integrity ) ) + '%';
+  m_window.drawLine( barBottom,
+                     barBottom + fullBar * player.m_attributes.integrity,
+                     20, ETag::HEALTH );
 
-    m_window.drawText( { { screenSize[ 0 ] * 0.05, screenSize[ 1 ] * 0.95 } }, health );
-  }
+  string health = to_string( (int)( 100 * player.m_attributes.integrity ) ) + '%';
+
+  m_window.drawText( { { screenSize[ 0 ] * 0.05, screenSize[ 1 ] * 0.95 } }, health );
 }
 
 
@@ -138,13 +137,13 @@ void CGame::clickHandler( int button, int state, int x, int y )
   {
     if( state == GLUT_DOWN )
     {
-      m_painter.addPoint( x, y, m_objects );
+      drawPenalty( m_painter.addPoint( x, y, m_objects ) );
       pause();
       pressed = true;
     }
     else if( state == GLUT_UP && pressed )
     {
-      m_painter.stop( x, y, m_objects );
+      drawPenalty( m_painter.stop( x, y, m_objects ) );
       start();
       pressed = false;
     }
@@ -154,7 +153,7 @@ void CGame::clickHandler( int button, int state, int x, int y )
 void CGame::moveHandler( int x, int y )
 {
   if( pressed )
-    m_painter.addPoint( x, y, m_objects );
+    drawPenalty( m_painter.addPoint( x, y, m_objects ) );
 }
 
 bool CGame::checkCollisions( const vector<TManifold> &collisions )
@@ -175,12 +174,8 @@ bool CGame::checkCollision( const TManifold &collision )
 
 bool CGame::checkPlayerHealth() const
 {
-  return any_of( m_objects.begin(), m_objects.end(),
-                 []( const auto &obj )
-                 {
-                   return obj->m_tag & ETag::PLAYER &&
-                          obj->m_attributes.integrity <= 0;
-                 } );
+   return m_objects[ 0 ]->m_tag & ETag::PLAYER &&
+          m_objects[ 0 ]->m_attributes.integrity <= 0;
 }
 
 long CGame::getMilliseconds()
@@ -200,15 +195,22 @@ void CGame::setTimer()
 
 bool CGame::playerOnScreen()
 {
-  for( const auto &obj: m_objects )
-  {
-    if( !( obj->m_tag & ETag::PLAYER ) )
-      continue;
+  const auto &player = *m_objects[ 0 ];
+  if( !( player.m_tag & ETag::PLAYER ) )
+    return true;
+  const TVector<2> &pos = player.m_position;
+  const TVector<2> screenSize = m_window.getViewSize();
+  return ( pos[ 0 ] > 0 && pos[ 1 ] > 0 &&
+            pos[ 0 ] < screenSize[ 0 ] &&
+            pos[ 1 ] < screenSize[ 1 ] );
+}
 
-    TVector<2> screenSize = m_window.getViewSize();
-    if( obj->m_position[ 0 ] < 0 || obj->m_position[ 1 ] < 0
-        || obj->m_position[ 0 ] > screenSize[ 0 ] || obj->m_position[ 1 ] > screenSize[ 1 ] )
-      return false;
-  }
-  return true;
+void CGame::drawPenalty( double length )
+{
+  auto &player = *m_objects[ 0 ];
+  if( !( player.m_tag & ETag::PLAYER ) )
+    return;
+
+  player.m_attributes.integrity -= length / 20000;
+
 }
