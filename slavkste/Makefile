@@ -1,5 +1,5 @@
 CXX = g++
-CXX_FLAGS = -g -Wall -std=c++17 -pedantic -Wno-long-long -Werror
+CXX_FLAGS = -O2 -Wall -std=c++17 -pedantic -Wno-long-long -Werror
 
 LXX_FLAGS = -I/usr/include -L/usr/lib/x86_64-linux-gnu
 

@@ -811,8 +811,6 @@ void linearAlgebraTest()
   TMatrix<2,2> m2{ { 4, 1 }, { 11, 3 } };
   assert( m2.invert() );
   assert( compareMatrices( m2, TMatrix<2,2>{ { 3, -1 }, { -11, 4 } } ) );
-
-
 }
 
 int main()

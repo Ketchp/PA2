@@ -19,7 +19,7 @@
     { "type": "rectangle", "position": [ 540, 790 ], "size": [ 900,  10 ] },
     { "type": "rectangle", "position": [  90, 400 ], "size": [  10, 790 ] },
 
-    { "type": "rectangle", "position": [ 380, 500 ], "size": [ 240,  20 ], "rotation":  0.05 },
-    { "type": "rectangle", "position": [ 620, 500 ], "size": [ 240,  20 ], "rotation": -0.05 }
+    { "type": "rectangle", "position": [ 380, 500 ], "size": [ 240,  20 ], "rotation":  -0.2 },
+    { "type": "rectangle", "position": [ 620, 500 ], "size": [ 240,  20 ], "rotation": 0.2 }
   ]
 }

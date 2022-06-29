@@ -21,3 +21,14 @@ create documentation with `make doc`
 - pause/play at any time using `P`
 - restart at any time using `R`
 - quit at any time using `Q`
+
+### Level creation
+- All levels are stored as JSON documents.
+- You can explore assets/level_template.json to see capabilities.
+- Entire level loading is contained in src/levelLoader.cpp, feel free to merge in new features.
+
+![](assets/tut_1.png)
+
+![](assets/tut_2.png)
+
+![](assets/tut_3.png)

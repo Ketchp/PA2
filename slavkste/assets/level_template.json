@@ -1,0 +1,42 @@
+{
+  "scene":
+  {
+    "title": "Insert level title here",
+    "size": [ 1000, 800 ], "comment-size": "Size of view, not the screen size.",
+    "fields": [ "gravity" ], "comment-fields": "Force fields.(Only gravity supported for now.)",
+    "pen":
+    {
+      "width": 10,
+      "density": 250
+    }, "comment-pen": "Draw width and density of drawn object.",
+    "next": "assets/level_2.json", "comment-next": "Filename of next level."
+  },
+  "comment-items": "Array of all items in level.",
+  "items":
+  [
+    {
+      "type": "",
+      "comment-type": "Each item must contain type attribute. Currently supported values: circle, rectangle, text",
+      "comment-type_specific_attributes":
+      {
+        "circle": { "position": "centre position", "size": "radius" },
+        "rectangle": { "position": "centre position", "size": "width and height" },
+        "text": { "text": "text to display" }
+      },
+      "tag": "single tag",
+      "or": "or",
+      "tags": [ "array", "of", "tags" ],
+      "comment-tags": [
+        "tags are flags that changes item behaviour",
+        "transparent", "renders item invisible to ray-casting, thus allows drawing over this item.",
+        "non solid", "if item is non solid, it can't collide.( Collisions are checked for but are not resolved. )",
+        "target", "item which is considered finish line for player",
+        "player", "item with live bar" ],
+
+      "physics": { "density": 15 },
+      "comment-physics": "Optional tags that specifies items physics attributes.( currently only density supported )",
+      "comment-physics.density": "default: infinity"
+
+    }
+  ]
+}
