@@ -23,7 +23,7 @@ create documentation with `make doc`
 - quit at any time using `Q`
 
 ### Level creation
-- All levels are stored as JSON documents.
+- All levels are stored as JSON documents inside assets. Game starts with tutorial_1.
 - You can explore assets/level_template.json to see capabilities.
 - Entire level loading is contained in src/levelLoader.cpp, feel free to merge in new features.
 
