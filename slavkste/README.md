@@ -1,5 +1,5 @@
 # Remake of mobile game Brain It On!
- This game is semester work for class Programing and Algorithmization II.
+ This game is semester work for class Programing and Algorithmization II. Assignment allowed only limited set of libraries which we could use, that's why graphics uses deprecated OpenGL v.2 with glut.
 
 ### Usage
 compile with `make compile`,
