@@ -22,3 +22,5 @@ cmake-build-debug
 callgrind*
 
 !Makefile
+
+*/Makefile.d

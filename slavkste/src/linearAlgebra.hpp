@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <cstdarg>
 #include <numeric>
-
+#include <ostream>
 
 template <size_t dim, typename dataType>
 struct TVector;
